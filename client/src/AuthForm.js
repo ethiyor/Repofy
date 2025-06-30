@@ -20,7 +20,7 @@ function AuthForm({ onAuthSuccess }) {
           email,
           password,
           options: {
-            emailRedirectTo: "http://localhost:3000/confirm"
+            emailRedirectTo: "https://repofy-frontend.onrender.com"
           },
         });
         if (error) throw error;
