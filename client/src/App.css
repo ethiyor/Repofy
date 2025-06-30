@@ -1,0 +1,92 @@
+.App {
+  font-family: "Segoe UI", sans-serif;
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #f8f8f8;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+input,
+textarea,
+button {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+button {
+  background-color: #0e1319;
+  color: #ffffff;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #578dae;
+}
+
+.repo-card {
+  background-color: #ffffff;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+
+.cta-text {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #333;
+  text-align: center;
+}
+
+.intro {
+  margin-bottom: 2rem;
+}
+
+.upload-section {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.status-message {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #cce5ff;
+  background-color: #e6f0ff;
+  border-radius: 6px;
+  color: #004085;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: #777;
+}
+a {
+  text-decoration: none;
+  color: #0e1319; 
+}
+a:hover {
+  text-decoration: underline; /* Optional: add underline on hover */
+  color: #578dae; /* Optional: hover color */
+}
