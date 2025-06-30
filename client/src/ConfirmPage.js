@@ -8,7 +8,7 @@ function ConfirmPage() {
       <p>
         Please click the link below to open the app:
       </p>
-      <a href="http://localhost:3000" style={{ fontWeight: "bold", fontSize: "1.2rem" }}>
+        <a href="https://repofy-frontend.onrender.com" style={{ fontWeight: "bold", fontSize: "1.2rem" }}>
         🔗 Go to App
       </a>
     </div>
