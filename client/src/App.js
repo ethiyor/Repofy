@@ -35,7 +35,7 @@ function App() {
 
     try {
       // Step 1: Create the repo
-      const repoRes = await fetch("http://localhost:4000/repos", {
+      const repoRes = await fetch("https://repofy-backend.onrender.com/repos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,7 +54,7 @@ function App() {
       const repo_id = repoData.id;
 
       // Step 2: Upload the file to the repo
-      const fileRes = await fetch("http://localhost:4000/upload", {
+      const fileRes = await fetch("https://repofy-backend.onrender.com/upload", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
