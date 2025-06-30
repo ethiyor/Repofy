@@ -10,7 +10,7 @@ function RepoList({ session }) {
 
       const token = session.access_token;
 
-      const res = await fetch("http://localhost:4000/repos", {
+      const res = await fetch("https://repofy-backend.onrender.com/repos", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -33,7 +33,7 @@ function RepoList({ session }) {
     const repo = updatedRepos[repoIndex];
 
     if (!repo.showFiles) {
-      const res = await fetch(`http://localhost:4000/repos/${repoId}/files`, {
+      const res = await fetch(`https://repofy-backend.onrender.com/repos/${repoId}/files`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
