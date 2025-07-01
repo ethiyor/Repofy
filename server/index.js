@@ -6,10 +6,30 @@ require("dotenv").config();
 const app = express();
 const PORT = 4000;
 
-app.use(cors({ origin: "http://localhost:3000" }));
+// ✅ Allow local and deployed frontend origins
+const allowedOrigins = [
+  "http://localhost:3000", 
+  "https://repofy-frontend.onrender.com"
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+// ✅ Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL, 
+  process.env.SUPABASE_ANON_KEY
+);
 
 // ✅ Auth middleware
 async function checkAuth(req, res, next) {
@@ -95,6 +115,7 @@ app.get("/repos/:id/files", checkAuth, async (req, res) => {
   res.json(data);
 });
 
+// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
