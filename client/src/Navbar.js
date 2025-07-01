@@ -13,7 +13,7 @@ function Navbar({ onToggleDarkMode }) {
         }}
       >
         <img
-          src="/repp.png"
+          src="/repo.png"
           alt="Repofy Logo"
           style={{ height: "80px", width: "auto" }}
         />
