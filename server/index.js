@@ -1,37 +1,25 @@
-const express = require("express");
-const cors = require("cors");
-const { createClient } = require("@supabase/supabase-js");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { createClient } from "@supabase/supabase-js";
+
+dotenv.config();
 
 const app = express();
 const PORT = 4000;
 
-// ✅ Allow local and deployed frontend origins
-const allowedOrigins = [
-  "http://localhost:3000", 
-  "https://repofy-frontend.onrender.com"
-];
-
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, etc.)
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
-  },
+  origin: true,
   credentials: true
 }));
 
 app.use(express.json());
 
-// ✅ Supabase client
 const supabase = createClient(
-  process.env.SUPABASE_URL, 
+  process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-// ✅ Auth middleware
 async function checkAuth(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(403).json({ error: "No token provided" });
@@ -43,7 +31,6 @@ async function checkAuth(req, res, next) {
   next();
 }
 
-// ✅ Sign up
 app.post("/signup", async (req, res) => {
   const { email, password } = req.body;
   const { data, error } = await supabase.auth.signUp({ email, password });
@@ -51,7 +38,6 @@ app.post("/signup", async (req, res) => {
   res.json(data);
 });
 
-// ✅ Log in
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -59,7 +45,6 @@ app.post("/login", async (req, res) => {
   res.json(data);
 });
 
-// ✅ Get all repos for the user
 app.get("/repos", checkAuth, async (req, res) => {
   const { data, error } = await supabase
     .from("repos")
@@ -70,7 +55,6 @@ app.get("/repos", checkAuth, async (req, res) => {
   res.json(data);
 });
 
-// ✅ Create a new repo
 app.post("/repos", checkAuth, async (req, res) => {
   const { name, description } = req.body;
 
@@ -84,7 +68,6 @@ app.post("/repos", checkAuth, async (req, res) => {
   res.json(data);
 });
 
-// ✅ Upload a file to an existing repo
 app.post("/upload", checkAuth, async (req, res) => {
   const { name, content, repo_id } = req.body;
 
@@ -102,7 +85,6 @@ app.post("/upload", checkAuth, async (req, res) => {
   res.json({ success: true, file: data });
 });
 
-// ✅ Get files for a specific repo
 app.get("/repos/:id/files", checkAuth, async (req, res) => {
   const { id } = req.params;
 
@@ -115,7 +97,6 @@ app.get("/repos/:id/files", checkAuth, async (req, res) => {
   res.json(data);
 });
 
-// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
