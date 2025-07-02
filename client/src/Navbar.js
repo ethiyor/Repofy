@@ -15,7 +15,7 @@ function Navbar({ onToggleDarkMode }) {
         <img
           src="/gih.png"
           alt="Repofy Logo"
-          style={{ height: "80px", width: "auto" }}
+          style={{ height: "90px", width: "auto" }}
         />
       </div>
 
@@ -32,7 +32,7 @@ function Navbar({ onToggleDarkMode }) {
           onClick={onToggleDarkMode}
           style={{
             padding: "6px 10px",
-            fontSize: "14px",
+            fontSize: "10px",
             backgroundColor: "#333",
             color: "#fff",
             border: "none",
