@@ -15,6 +15,7 @@ function App() {
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [repos, setRepos] = useState([]);
+  const [isPublic, setIsPublic] = useState(true);
 
   const toggleDarkMode = () => {
     const isDark = document.body.classList.toggle("dark");
@@ -102,6 +103,7 @@ function App() {
           name: title,
           description,
           tags: tags.split(",").map((t) => t.trim()),
+          is_public: isPublic,
         }),
       });
 
@@ -133,6 +135,7 @@ function App() {
       setDescription("");
       setTags("");
       setCode("");
+      setIsPublic(true);
       await fetchRepos(token);
     } catch (err) {
       setMessage("❌ Unexpected error: " + err.message);
@@ -169,7 +172,7 @@ function App() {
         <Navbar onToggleDarkMode={toggleDarkMode} />
 
         <header className="app-header">
-          <h1>🚀 Welcome to Repofy</h1>
+          <h1>Welcome to Repofy</h1>
           <p className="tagline">Your personal mini GitHub – simplified and fast.</p>
         </header>
 
@@ -195,6 +198,8 @@ function App() {
                   setRepos={setRepos}
                   onStar={starRepo}
                   onDownload={downloadFile}
+                  isPublic={isPublic}
+                  setIsPublic={setIsPublic}
                 />
               ) : (
                 <>
@@ -213,7 +218,7 @@ function App() {
           <hr />
           <p>
             © {new Date().getFullYear()} Repofy |{" "}
-            <a href="mailto:ytk2108@columbia.edu">Contact The Creator</a> | 💻 Built with{" "}
+            <a href="mailto:ytk2108@columbia.edu">Contact The Creator</a> | Built with{" "}
             <a href="https://react.dev/">React</a> &{" "}
             <a href="https://supabase.com/">Supabase</a>
           </p>
@@ -241,12 +246,14 @@ function Dashboard({
   setRepos,
   onStar,
   onDownload,
+  isPublic,
+  setIsPublic,
 }) {
   const hour = new Date().getHours();
   const greeting =
-    hour < 12 ? "☀️ Good morning" :
-    hour < 18 ? "🌤️ Good afternoon" :
-    "🌙 Good evening";
+    hour < 12 ? "Good morning" :
+    hour < 18 ? "Good afternoon" :
+    "Good evening";
 
   return (
     <div>
@@ -257,7 +264,7 @@ function Dashboard({
           details below and share your work with the world.
         </p>
         <button onClick={logout} style={{ float: "right" }}>
-          🚪 Log Out
+          Log Out
         </button>
         {session.user.email.endsWith(".edu") && (
           <div className="edu-badge">🎓 Verified .EDU Account</div>
@@ -289,6 +296,28 @@ function Dashboard({
           value={tags}
           onChange={(e) => setTags(e.target.value)}
         />
+
+        <label><strong>Visibility</strong></label>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ marginRight: '1rem' }}>
+            <input
+              type="radio"
+              name="visibility"
+              checked={isPublic}
+              onChange={() => setIsPublic(true)}
+            />
+            Public
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="visibility"
+              checked={!isPublic}
+              onChange={() => setIsPublic(false)}
+            />
+            Private
+          </label>
+        </div>
 
         <label><strong>Code Content</strong></label>
         <textarea
