@@ -22,12 +22,12 @@ function AuthForm({ onAuthSuccess }) {
           email,
           password,
           options: {
-            emailRedirectTo: "https://repofy-frontend.onrender.com",
+            emailRedirectTo: "http://localhost:3000/confirm",
           },
         });
         if (error) throw error;
 
-        setMessage(`✅ A verification email has been sent to ${email}. Please check your inbox.`);
+        setMessage(`✅ A verification email has been sent to ${email}. Please check your inbox and click the confirmation link.`);
         setSignUpDisabled(true);
         return;
       }
@@ -120,7 +120,7 @@ function AuthForm({ onAuthSuccess }) {
           className="toggle-auth"
           onClick={() => {
             setIsSignUp(!isSignUp);
-            setError("");
+            setError("")
             setMessage("");
             setSignUpDisabled(false);
           }}

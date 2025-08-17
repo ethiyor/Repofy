@@ -66,13 +66,22 @@ function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchRepos(session.access_token);
+      // Only set session if user is confirmed
+      if (session && session.user.email_confirmed_at) {
+        setSession(session);
+        fetchRepos(session.access_token);
+      }
     });
 
     supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchRepos(session.access_token);
+      // Only set session if user is confirmed
+      if (session && session.user.email_confirmed_at) {
+        setSession(session);
+        fetchRepos(session.access_token);
+      } else if (!session) {
+        setSession(null);
+        setRepos([]);
+      }
     });
   }, []);
 
