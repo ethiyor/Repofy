@@ -58,10 +58,260 @@ button:hover {
 .repo-card {
   background-color: #ffffff;
   padding: 1.25rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid #ddd;
+  transition: all 0.3s ease;
+}
+
+.repo-card.collapsed {
+  padding: 1rem 1.25rem;
+}
+
+.repo-card.collapsed:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.repo-card.expanded {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-color: #4a90e2;
+}
+
+.expand-indicator {
+  color: #4a90e2;
+  font-size: 12px;
+  font-weight: bold;
+  transition: transform 0.2s ease;
+  user-select: none;
+}
+
+.repo-card.expanded .expand-indicator {
+  transform: rotate(0deg);
+}
+
+.repo-card.collapsed .expand-indicator {
+  transform: rotate(-90deg);
+}
+
+.repo-description {
+  margin-bottom: 0.75rem;
+}
+
+.repo-description p {
+  margin: 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* User Section Styles */
+.user-section {
+  margin-bottom: 2.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.user-header {
+  background: #f6f8fa;
+  color: #24292f;
+  border-bottom: 1px solid #d1d9e0;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* === PROFILE INTERFACE === */
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.profile-name {
+  font-weight: 600;
+  color: inherit;
+}
+
+.profile-username {
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: #656d76;
+  font-style: italic;
+}
+
+.your-repos-badge {
+  background-color: #dbeafe;
+  color: #1e40af;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.repo-count {
+  background-color: #e5e7eb;
+  color: #374151;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.user-repos {
+  padding: 1.5rem;
+  background: #ffffff;
+}
+
+/* === TWO-COLUMN REPOSITORY LAYOUT === */
+.repositories-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.user-repos-column,
+.other-repos-column {
+  min-height: 300px;
+}
+
+.column-header {
+  text-align: left;
+  margin-bottom: 1.5rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #d1d9e0;
+}
+
+.column-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #24292f;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: #f9f9f9;
+  border-radius: 12px;
+  border: 2px dashed #ddd;
+  color: #666;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  margin: 0;
+  font-style: italic;
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 768px) {
+  .repositories-container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .column-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+}
+
+.repo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.repo-title-section {
+  flex: 1;
+}
+
+.repo-title-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.15rem;
+  color: #333;
+}
+
+.repo-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.username-badge {
+  background-color: #e8f4fd;
+  color: #1976d2;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.owner-badge {
+  background-color: #fff3e0;
+  color: #f57c00;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.repo-visibility {
+  display: flex;
+  align-items: flex-start;
+}
+
+.public-badge {
+  background-color: transparent;
+  color: #656d76;
+  border: 1px solid #d1d9e0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.private-badge {
+  background-color: transparent;
+  color: #656d76;
+  border: 1px solid #d1d9e0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .repo-actions button {
@@ -74,9 +324,219 @@ button:hover {
   cursor: pointer;
 }
 
+/* === GITHUB-STYLE BUTTONS === */
+.btn-primary {
+  background-color: #2da44e;
+  color: white;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+  padding: 5px 12px;
+  font-size: 12px;
+  line-height: 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #2c974b;
+}
+
+.btn-secondary {
+  background-color: #f6f8fa;
+  color: #24292f;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+  padding: 5px 12px;
+  font-size: 12px;
+  line-height: 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.btn-danger {
+  background-color: #da3633;
+  color: white;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+  padding: 5px 12px;
+  font-size: 12px;
+  line-height: 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #b93330;
+}
+
+.btn-star {
+  background-color: #f6f8fa;
+  color: #24292f;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+  padding: 5px 12px;
+  font-size: 12px;
+  line-height: 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-star:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: rgba(27, 31, 36, 0.25);
+}
+
+.btn-small {
+  background-color: #f6f8fa;
+  color: #24292f;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-right: 4px;
+  transition: background-color 0.2s;
+}
+
+.btn-small:hover:not(:disabled) {
+  background-color: #e1e7ef;
+  border-color: rgba(27, 31, 36, 0.25);
+}
+
+.btn-disabled {
+  background-color: #f6f8fa;
+  color: #8b949e;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+  padding: 5px 12px;
+  font-size: 12px;
+  line-height: 20px;
+  border-radius: 6px;
+  cursor: not-allowed;
+  font-weight: 500;
+}
+
+/* Override default button styles for GitHub-style buttons */
+.btn-primary, .btn-secondary, .btn-danger, .btn-star, .btn-small, .btn-disabled {
+  display: inline-block;
+  width: auto;
+  margin: 0 4px 0 0;
+}
+
 /* === SECTIONS === */
 .intro {
   margin-bottom: 2rem;
+}
+
+.intro-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  gap: 1rem;
+}
+
+.logout-btn {
+  background-color: #6c757d;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  width: auto;
+}
+
+.logout-btn:hover {
+  background-color: #5a6268;
+}
+
+.upload-toggle-btn {
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+  transition: all 0.3s ease;
+  width: auto;
+}
+
+.upload-toggle-btn:hover {
+  background: linear-gradient(135deg, #357abd 0%, #2868a8 100%);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+  transform: translateY(-1px);
+}
+
+.upload-section {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  border: 2px solid #4a90e2;
+  animation: slideDown 0.3s ease-out;
+}
+
+.upload-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.upload-btn {
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  flex: 1;
+  width: auto;
+}
+
+.upload-btn:hover {
+  background: linear-gradient(135deg, #357abd 0%, #2868a8 100%);
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+  color: white;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  width: auto;
+}
+
+.cancel-btn:hover {
+  background-color: #5a6268;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .upload-section {
@@ -148,16 +608,41 @@ a:hover {
 /* === COMMENTS === */
 .comment-section {
   margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .comment-section textarea {
   width: 100%;
-  min-height: 60px;
-  margin-top: 0.5rem;
-  border-radius: 4px;
-  padding: 8px;
+  min-height: 80px;
+  margin-bottom: 0.75rem;
+  border-radius: 6px;
+  padding: 12px;
   font-size: 14px;
   resize: vertical;
+  border: 1px solid #d1d9e0;
+  background: white;
+  font-family: inherit;
+}
+
+.comment-section textarea:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
 }
 
 /* === AUTH FORM === */
@@ -287,11 +772,106 @@ body.dark button:hover {
   background-color: #555;
 }
 
+/* === DARK MODE - GITHUB-STYLE BUTTONS === */
+body.dark .btn-primary {
+  background-color: #238636;
+  color: #f0f6fc;
+}
+
+body.dark .btn-primary:hover:not(:disabled) {
+  background-color: #2ea043;
+}
+
+body.dark .btn-secondary {
+  background-color: #21262d;
+  color: #f0f6fc;
+  border-color: #30363d;
+}
+
+body.dark .btn-secondary:hover:not(:disabled) {
+  background-color: #30363d;
+}
+
+body.dark .btn-danger {
+  background-color: #da3633;
+  color: #f0f6fc;
+}
+
+body.dark .btn-danger:hover:not(:disabled) {
+  background-color: #b93330;
+}
+
+body.dark .btn-star {
+  background-color: #21262d;
+  color: #f0f6fc;
+  border-color: #30363d;
+}
+
+body.dark .btn-star:hover:not(:disabled) {
+  background-color: #30363d;
+  border-color: #484f58;
+}
+
+body.dark .btn-small {
+  background-color: #21262d;
+  color: #f0f6fc;
+  border-color: #30363d;
+}
+
+body.dark .btn-small:hover:not(:disabled) {
+  background-color: #484f58;
+  border-color: #6e7681;
+}
+
+body.dark .btn-disabled {
+  background-color: #21262d;
+  color: #6e7681;
+  border-color: #30363d;
+}
+
 body.dark .repo-card,
 body.dark .upload-section,
 body.dark .auth-form-container {
   background-color: #2a2a2a;
   border-color: #444;
+}
+
+body.dark .repo-card.expanded {
+  border-color: #58a6ff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+body.dark .repo-card.collapsed:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.dark .expand-indicator {
+  color: #58a6ff;
+}
+
+body.dark .repo-description p {
+  color: #c9d1d9;
+}
+
+body.dark .upload-section {
+  border-color: #4a90e2;
+}
+
+body.dark .logout-btn {
+  background-color: #495057;
+}
+
+body.dark .logout-btn:hover {
+  background-color: #343a40;
+}
+
+body.dark .cancel-btn {
+  background-color: #495057;
+}
+
+body.dark .cancel-btn:hover {
+  background-color: #343a40;
 }
 
 body.dark .status-message {
@@ -316,4 +896,96 @@ body.dark .file-content {
   background-color: #1e1e1e;
   color: #f1f1f1;
   border: 1px solid #444;
+}
+
+body.dark .user-section {
+  border-color: #444;
+  background: #2a2a2a;
+}
+
+body.dark .user-header {
+  background: #21262d;
+  color: #f0f6fc;
+  border-bottom-color: #30363d;
+}
+
+body.dark .your-repos-badge {
+  background-color: #1e3a8a;
+  color: #bfdbfe;
+}
+
+body.dark .repo-count {
+  background-color: #374151;
+  color: #d1d5db;
+}
+
+/* === DARK MODE - PROFILE INTERFACE === */
+body.dark .profile-avatar {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+}
+
+body.dark .profile-username {
+  color: #8b949e;
+}
+
+body.dark .user-repos {
+  background: #2a2a2a;
+}
+
+body.dark .repo-title-section h4 {
+  color: #f1f1f1;
+}
+
+body.dark .username-badge {
+  background-color: #1e3a5f;
+  color: #90caf9;
+}
+
+body.dark .owner-badge {
+  background-color: #3e2723;
+  color: #ffb74d;
+}
+
+body.dark .public-badge {
+  background-color: transparent;
+  color: #8b949e;
+  border-color: #30363d;
+}
+
+body.dark .private-badge {
+  background-color: transparent;
+  color: #8b949e;
+  border-color: #30363d;
+}
+
+/* === DARK MODE - TWO-COLUMN LAYOUT === */
+body.dark .column-header {
+  border-bottom: 1px solid #30363d;
+}
+
+body.dark .column-header h2 {
+  color: #f0f6fc;
+}
+
+body.dark .empty-state {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #ccc;
+}
+
+/* === DARK MODE - COMMENTS === */
+body.dark .comment-section {
+  background: #21262d;
+  border-color: #30363d;
+}
+
+body.dark .comment-section textarea {
+  background: #0d1117;
+  border-color: #30363d;
+  color: #f0f6fc;
+}
+
+body.dark .comment-section textarea:focus {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
 }

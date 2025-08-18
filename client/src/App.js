@@ -4,11 +4,13 @@ import supabase from "./supabase";
 import AuthForm from "./AuthForm";
 import RepoList from "./RepoList";
 import ConfirmPage from "./ConfirmPage";
+import { getUserProfile } from "./api";
 import "./App.css";
 import Navbar from "./Navbar";
 
 function App() {
   const [session, setSession] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -16,6 +18,7 @@ function App() {
   const [message, setMessage] = useState("");
   const [repos, setRepos] = useState([]);
   const [isPublic, setIsPublic] = useState(true);
+  const [showUploadForm, setShowUploadForm] = useState(false);
 
   const toggleDarkMode = () => {
     const isDark = document.body.classList.toggle("dark");
@@ -36,9 +39,14 @@ function App() {
     }
   }, [message]);
 
+  // Use environment-based URLs
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://repofy-backend.onrender.com' 
+    : 'http://localhost:4000';
+
   const fetchRepos = async (token) => {
     try {
-      const res = await fetch("https://repofy-backend.onrender.com/repos", {
+      const res = await fetch(`${API_BASE_URL}/repos`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -64,12 +72,23 @@ function App() {
     }
   };
 
+  const fetchUserProfile = async (token) => {
+    try {
+      const profile = await getUserProfile(token);
+      setUserProfile(profile);
+    } catch (err) {
+      console.error("Failed to fetch user profile:", err);
+      // Don't show error to user, just use email as fallback
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       // Only set session if user is confirmed
       if (session && session.user.email_confirmed_at) {
         setSession(session);
         fetchRepos(session.access_token);
+        fetchUserProfile(session.access_token);
       }
     });
 
@@ -78,8 +97,10 @@ function App() {
       if (session && session.user.email_confirmed_at) {
         setSession(session);
         fetchRepos(session.access_token);
+        fetchUserProfile(session.access_token);
       } else if (!session) {
         setSession(null);
+        setUserProfile(null);
         setRepos([]);
       }
     });
@@ -88,6 +109,7 @@ function App() {
   const logout = async () => {
     await supabase.auth.signOut();
     setSession(null);
+    setUserProfile(null);
     setRepos([]);
     setMessage("✅ You have been logged out.");
   };
@@ -102,7 +124,7 @@ function App() {
     }
 
     try {
-      const repoRes = await fetch("https://repofy-backend.onrender.com/repos", {
+      const repoRes = await fetch(`${API_BASE_URL}/repos`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -124,7 +146,7 @@ function App() {
 
       const repo_id = repoData.id;
 
-      const fileRes = await fetch("https://repofy-backend.onrender.com/upload", {
+      const fileRes = await fetch(`${API_BASE_URL}/upload`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -135,16 +157,17 @@ function App() {
 
       if (!fileRes.ok) {
         const err = await fileRes.json();
-        setMessage("❌ File upload failed: " + err.error);
+        setMessage("File upload failed: " + err.error);
         return;
       }
 
-      setMessage("✅ Repository and file uploaded successfully!");
+      setMessage("Repository and file uploaded successfully!");
       setTitle("");
       setDescription("");
       setTags("");
       setCode("");
       setIsPublic(true);
+      setShowUploadForm(false); // Close the form after successful upload
       await fetchRepos(token);
     } catch (err) {
       setMessage("❌ Unexpected error: " + err.message);
@@ -153,7 +176,7 @@ function App() {
 
   const starRepo = async (id) => {
     try {
-      const res = await fetch(`https://repofy-backend.onrender.com/repos/${id}/star`, {
+      const res = await fetch(`${API_BASE_URL}/repos/${id}/star`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -192,6 +215,7 @@ function App() {
               session ? (
                 <Dashboard
                   session={session}
+                  userProfile={userProfile}
                   logout={logout}
                   uploadRepo={uploadRepo}
                   title={title}
@@ -209,11 +233,13 @@ function App() {
                   onDownload={downloadFile}
                   isPublic={isPublic}
                   setIsPublic={setIsPublic}
+                  showUploadForm={showUploadForm}
+                  setShowUploadForm={setShowUploadForm}
                 />
               ) : (
                 <>
                   <p className="cta-text">
-                    🔐 Sign in to create, upload, and explore your repositories!
+                    Sign in to create, upload, and explore your repositories!
                   </p>
                   <AuthForm onAuthSuccess={setSession} />
                 </>
@@ -227,7 +253,7 @@ function App() {
           <hr />
           <p>
             © {new Date().getFullYear()} Repofy |{" "}
-            <a href="mailto:ytk2108@columbia.edu">Contact The Creator</a> | Built with{" "}
+            <a href="mailto:ytk2108@columbia.edu">Contact</a> | Built with{" "}
             <a href="https://react.dev/">React</a> &{" "}
             <a href="https://supabase.com/">Supabase</a>
           </p>
@@ -240,6 +266,7 @@ function App() {
 // ✅ Dashboard component with greeting
 function Dashboard({
   session,
+  userProfile,
   logout,
   uploadRepo,
   title,
@@ -257,6 +284,8 @@ function Dashboard({
   onDownload,
   isPublic,
   setIsPublic,
+  showUploadForm,
+  setShowUploadForm,
 }) {
   const hour = new Date().getHours();
   const greeting =
@@ -264,57 +293,82 @@ function Dashboard({
     hour < 18 ? "Good afternoon" :
     "Good evening";
 
+  // Get display name with fallbacks
+  const getDisplayName = () => {
+    if (userProfile?.display_name) return userProfile.display_name;
+    if (userProfile?.username) return userProfile.username;
+    if (session?.user?.user_metadata?.username) return session.user.user_metadata.username;
+    return session.user.email.split("@")[0];
+  };
+
+  const toggleUploadForm = () => {
+    setShowUploadForm(!showUploadForm);
+    // Clear form when closing
+    if (showUploadForm) {
+      setTitle("");
+      setDescription("");
+      setTags("");
+      setCode("");
+      setIsPublic(true);
+    }
+  };
+
   return (
     <div>
       <div className="intro">
-        <h2>{greeting}, {session.user.email.split("@")[0]}!</h2>
+        <h2>{greeting}, {getDisplayName()}!</h2>
         <p>
-          Easily upload and manage your code repositories. Fill in your project
-          details below and share your work with the world.
+          Easily upload and manage your code repositories. Click the button below to create a new repository.
         </p>
-        <button onClick={logout} style={{ float: "right" }}>
-          Log Out
-        </button>
+        <div className="intro-actions">
+          <button onClick={logout} className="logout-btn">
+            Log Out
+          </button>
+          <button onClick={toggleUploadForm} className="btn-primary">
+            {showUploadForm ? "Cancel Upload" : "Upload New Repository"}
+          </button>
+        </div>
         {session.user.email.endsWith(".edu") && (
-          <div className="edu-badge">🎓 Verified .EDU Account</div>
+          <div className="edu-badge">Verified .EDU Account</div>
         )}
       </div>
 
       {message && <div className="status-message">{message}</div>}
 
-      <div className="upload-section">
-        <h3>Create a New Repository</h3>
+      {showUploadForm && (
+        <div className="upload-section">
+          <h3>Create a New Repository</h3>
 
-        <label><strong>Repository Title</strong></label>
-        <input
-          placeholder="Enter title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+          <label><strong>Repository Title</strong></label>
+          <input
+            placeholder="Enter title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
 
-        <label><strong>Description</strong></label>
-        <input
-          placeholder="Short description of your project"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+          <label><strong>Description</strong></label>
+          <input
+            placeholder="Short description of your project"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
 
-        <label><strong>Tags</strong> (comma-separated)</label>
-        <input
-          placeholder="#react, #api"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-        />
+          <label><strong>Tags</strong> (comma-separated)</label>
+          <input
+            placeholder="#react, #api"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
 
-        <label><strong>Visibility</strong></label>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ marginRight: '1rem' }}>
-            <input
-              type="radio"
-              name="visibility"
-              checked={isPublic}
-              onChange={() => setIsPublic(true)}
-            />
+          <label><strong>Visibility</strong></label>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ marginRight: '1rem' }}>
+              <input
+                type="radio"
+                name="visibility"
+                checked={isPublic}
+                onChange={() => setIsPublic(true)}
+              />
             Public
           </label>
           <label>
@@ -328,17 +382,21 @@ function Dashboard({
           </label>
         </div>
 
-        <label><strong>Code Content</strong></label>
-        <textarea
-         className="code-input"
-          placeholder="Paste your code here..."
-          rows={10}
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-        />
+          <label><strong>Code Content</strong></label>
+          <textarea
+           className="code-input"
+            placeholder="Paste your code here..."
+            rows={10}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+          />
 
-        <button onClick={uploadRepo}>📤 Upload Repository</button>
-      </div>
+          <div className="upload-actions">
+            <button onClick={uploadRepo} className="btn-primary">Upload Repository</button>
+            <button onClick={toggleUploadForm} className="btn-secondary">Cancel</button>
+          </div>
+        </div>
+      )}
 
       <RepoList
         session={session}

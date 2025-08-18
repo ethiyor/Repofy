@@ -15,6 +15,11 @@ app.use(cors({
 
 app.use(express.json());
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
@@ -42,9 +47,43 @@ async function checkAuth(req, res, next) {
 }
 
 app.post("/signup", async (req, res) => {
-  const { email, password } = req.body;
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { email, password, username } = req.body;
+  
+  // Validate username if provided
+  if (username) {
+    if (username.length < 3) {
+      return res.status(400).json({ error: "Username must be at least 3 characters long" });
+    }
+    
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return res.status(400).json({ error: "Username can only contain letters, numbers, underscores, and hyphens" });
+    }
+    
+    // Check if username already exists
+    const { data: existingUser, error: checkError } = await supabaseAdmin
+      .from("user_profiles")
+      .select("username")
+      .eq("username", username.toLowerCase())
+      .single();
+      
+    if (existingUser) {
+      return res.status(400).json({ error: "Username already taken" });
+    }
+  }
+
+  const { data, error } = await supabase.auth.signUp({ 
+    email, 
+    password,
+    options: {
+      data: {
+        username: username ? username.trim() : null,
+        display_name: username ? username.trim() : null
+      }
+    }
+  });
+  
   if (error) return res.status(400).json({ error: error.message });
+  
   res.json(data);
 });
 
@@ -55,19 +94,225 @@ app.post("/login", async (req, res) => {
   res.json(data);
 });
 
-app.get("/repos", checkAuth, async (req, res) => {
-  // Get all public repos, plus the user's own private repos
-  const { data, error } = await supabaseAdmin
-    .from("repos")
-    .select("*")
-    .or(`is_public.eq.true,user_id.eq.${req.user.id}`);
-
-  if (error) return res.status(500).send(error.message);
-  res.json(data);
+// Check username availability
+app.get("/check-username/:username", async (req, res) => {
+  const { username } = req.params;
+  
+  if (!username || username.length < 3) {
+    return res.status(400).json({ error: "Username must be at least 3 characters long" });
+  }
+  
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return res.status(400).json({ error: "Username can only contain letters, numbers, underscores, and hyphens" });
+  }
+  
+  const { data: existingUser, error } = await supabaseAdmin
+    .from("user_profiles")
+    .select("username")
+    .eq("username", username.toLowerCase())
+    .single();
+    
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+    return res.status(500).json({ error: "Database error" });
+  }
+  
+  const available = !existingUser;
+  res.json({ available, username: username.toLowerCase() });
 });
+
+// Get user profile
+app.get("/profile", checkAuth, async (req, res) => {
+  // Ensure user has a profile
+  await ensureUserProfile(req.user);
+
+  const { data, error } = await supabaseAdmin
+    .from("user_profiles")
+    .select("*")
+    .eq("user_id", req.user.id)
+    .single();
+    
+  if (error && error.code !== 'PGRST116') {
+    return res.status(500).json({ error: error.message });
+  }
+  
+  res.json(data || { user_id: req.user.id, email: req.user.email });
+});
+
+// Create or update user profile
+app.post("/profile", checkAuth, async (req, res) => {
+  const { username, display_name, bio, website, location } = req.body;
+  
+  // Validate username if provided
+  if (username) {
+    if (username.length < 3) {
+      return res.status(400).json({ error: "Username must be at least 3 characters long" });
+    }
+    
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return res.status(400).json({ error: "Username can only contain letters, numbers, underscores, and hyphens" });
+    }
+    
+    // Check if username is taken by another user
+    const { data: existingUser, error: checkError } = await supabaseAdmin
+      .from("user_profiles")
+      .select("user_id")
+      .eq("username", username.toLowerCase())
+      .neq("user_id", req.user.id)
+      .single();
+      
+    if (existingUser) {
+      return res.status(400).json({ error: "Username already taken" });
+    }
+  }
+
+  try {
+    // Try to update first
+    const { data: updateData, error: updateError } = await supabaseAdmin
+      .from("user_profiles")
+      .update({
+        username: username?.toLowerCase(),
+        display_name: display_name,
+        bio: bio,
+        website: website,
+        location: location
+      })
+      .eq("user_id", req.user.id)
+      .select()
+      .single();
+
+    if (updateError && updateError.code === 'PGRST116') {
+      // Profile doesn't exist, create it
+      const { data: insertData, error: insertError } = await supabaseAdmin
+        .from("user_profiles")
+        .insert([{
+          user_id: req.user.id,
+          username: username?.toLowerCase() || req.user.email.split('@')[0],
+          display_name: display_name || username || req.user.email.split('@')[0],
+          email: req.user.email,
+          bio: bio,
+          website: website,
+          location: location
+        }])
+        .select()
+        .single();
+
+      if (insertError) {
+        return res.status(500).json({ error: insertError.message });
+      }
+      
+      return res.json(insertData);
+    } else if (updateError) {
+      return res.status(500).json({ error: updateError.message });
+    }
+
+    res.json(updateData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/repos", checkAuth, async (req, res) => {
+  try {
+    // First, ensure the current user has a profile
+    await ensureUserProfile(req.user);
+
+    // Get all public repos, plus the user's own private repos
+    const { data: repos, error: reposError } = await supabaseAdmin
+      .from("repos")
+      .select("*")
+      .or(`is_public.eq.true,user_id.eq.${req.user.id}`);
+
+    if (reposError) throw reposError;
+
+    // Get all user profiles to match with repos
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("user_profiles")
+      .select("user_id, username, display_name");
+
+    // If user_profiles table doesn't exist yet, just return repos with fallback names
+    if (profilesError && profilesError.code === '42P01') {
+      // Table doesn't exist, return repos with email-based usernames
+      const enrichedData = repos.map(repo => ({
+        ...repo,
+        username: 'user_' + repo.user_id.substring(0, 8),
+        display_name: 'User ' + repo.user_id.substring(0, 8)
+      }));
+      return res.json(enrichedData);
+    }
+
+    if (profilesError) throw profilesError;
+
+    // Create a map of user_id to profile for quick lookup
+    const profileMap = {};
+    if (profiles) {
+      profiles.forEach(profile => {
+        profileMap[profile.user_id] = profile;
+      });
+    }
+
+    // Enrich repos with user profile data
+    const enrichedData = repos.map(repo => {
+      const profile = profileMap[repo.user_id];
+      return {
+        ...repo,
+        username: profile?.username || 'user_' + repo.user_id.substring(0, 8),
+        display_name: profile?.display_name || profile?.username || 'User ' + repo.user_id.substring(0, 8)
+      };
+    });
+    
+    res.json(enrichedData);
+  } catch (err) {
+    console.error('Error fetching repos:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Helper function to ensure user has a profile
+async function ensureUserProfile(user) {
+  try {
+    // Check if profile exists
+    const { data: existingProfile, error: checkError } = await supabaseAdmin
+      .from("user_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    // If table doesn't exist, just return (user will see fallback usernames)
+    if (checkError && checkError.code === '42P01') {
+      console.log('user_profiles table does not exist yet');
+      return;
+    }
+
+    if (checkError && checkError.code === 'PGRST116') {
+      // Profile doesn't exist, create one
+      const username = user.user_metadata?.username || user.email.split('@')[0];
+      const display_name = user.user_metadata?.display_name || username;
+
+      const { error: insertError } = await supabaseAdmin
+        .from("user_profiles")
+        .insert([{
+          user_id: user.id,
+          username: username.toLowerCase(),
+          display_name: display_name,
+          email: user.email
+        }]);
+
+      if (insertError) {
+        console.error('Error creating user profile:', insertError);
+      } else {
+        console.log(`Created profile for user: ${user.email}`);
+      }
+    }
+  } catch (err) {
+    console.error('Error in ensureUserProfile:', err);
+  }
+}
 
 app.post("/repos", checkAuth, async (req, res) => {
   const { name, description, is_public = false, tags = [] } = req.body;
+
+  // Ensure user has a profile
+  await ensureUserProfile(req.user);
 
   // Ensure is_public is a boolean
   const publicValue = typeof is_public === "string" ? is_public === "true" : !!is_public;
@@ -167,6 +412,66 @@ app.post("/repos/:id/star", checkAuth, async (req, res) => {
 
   // For now, just return success (implement proper starring logic later)
   res.json({ success: true, message: "Starred successfully" });
+});
+
+// Admin endpoint to create profiles for existing users (temporary)
+app.post("/admin/create-missing-profiles", async (req, res) => {
+  try {
+    // Get all users from auth.users who don't have profiles
+    const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (usersError) {
+      return res.status(500).json({ error: usersError.message });
+    }
+
+    let created = 0;
+    let errors = 0;
+
+    for (const user of users.users) {
+      try {
+        // Check if profile exists
+        const { data: existingProfile } = await supabaseAdmin
+          .from("user_profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (!existingProfile) {
+          // Create profile
+          const username = user.user_metadata?.username || user.email.split('@')[0];
+          const display_name = user.user_metadata?.display_name || username;
+
+          const { error: insertError } = await supabaseAdmin
+            .from("user_profiles")
+            .insert([{
+              user_id: user.id,
+              username: username.toLowerCase(),
+              display_name: display_name,
+              email: user.email
+            }]);
+
+          if (!insertError) {
+            created++;
+            console.log(`Created profile for: ${user.email}`);
+          } else {
+            errors++;
+            console.error(`Failed to create profile for ${user.email}:`, insertError);
+          }
+        }
+      } catch (err) {
+        errors++;
+        console.error(`Error processing user ${user.email}:`, err);
+      }
+    }
+
+    res.json({ 
+      message: `Created ${created} profiles, ${errors} errors`,
+      created,
+      errors
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => {

@@ -1,15 +1,65 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import supabase from "./supabase";
+import { checkUsernameAvailability } from "./api";
 import "./App.css";
+
+// Use environment-based URLs
+const FRONTEND_URL = process.env.NODE_ENV === 'production'
+  ? 'https://repofy-frontend.onrender.com'
+  : 'http://localhost:3000';
 
 function AuthForm({ onAuthSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [signUpDisabled, setSignUpDisabled] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState(""); // "checking", "available", "taken", "invalid"
+  const [usernameTimeout, setUsernameTimeout] = useState(null);
+
+  // Check username availability with debouncing
+  useEffect(() => {
+    if (!isSignUp || !username.trim()) {
+      setUsernameStatus("");
+      return;
+    }
+
+    if (username.length < 3) {
+      setUsernameStatus("invalid");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      setUsernameStatus("invalid");
+      return;
+    }
+
+    // Clear previous timeout
+    if (usernameTimeout) {
+      clearTimeout(usernameTimeout);
+    }
+
+    // Set new timeout for checking availability
+    const timeout = setTimeout(async () => {
+      setUsernameStatus("checking");
+      try {
+        const result = await checkUsernameAvailability(username);
+        setUsernameStatus(result.available ? "available" : "taken");
+      } catch (error) {
+        console.error("Username check failed:", error);
+        setUsernameStatus("");
+      }
+    }, 500);
+
+    setUsernameTimeout(timeout);
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [username, isSignUp]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,11 +68,41 @@ function AuthForm({ onAuthSuccess }) {
 
     try {
       if (isSignUp) {
+        // Validate username
+        if (!username.trim()) {
+          setError("Username is required.");
+          return;
+        }
+        
+        if (username.length < 3) {
+          setError("Username must be at least 3 characters long.");
+          return;
+        }
+        
+        if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+          setError("Username can only contain letters, numbers, underscores, and hyphens.");
+          return;
+        }
+
+        if (usernameStatus === "taken") {
+          setError("Username is already taken. Please choose a different one.");
+          return;
+        }
+
+        if (usernameStatus === "checking") {
+          setError("Please wait while we check username availability.");
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: "https://repofy-frontend.onrender.com/confirm",
+            emailRedirectTo: `${FRONTEND_URL}/confirm`,
+            data: {
+              username: username.trim(),
+              display_name: username.trim()
+            }
           },
         });
         if (error) throw error;
@@ -60,7 +140,7 @@ function AuthForm({ onAuthSuccess }) {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://repofy-frontend.onrender.com/reset",
+        redirectTo: `${FRONTEND_URL}/reset`,
       });
       if (error) throw error;
       setMessage("✅ Password reset link sent to your email.");
@@ -85,6 +165,46 @@ function AuthForm({ onAuthSuccess }) {
           placeholder="you@example.com"
           required
         />
+
+        {isSignUp && (
+          <>
+            <label>Username</label>
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="your_username"
+                required
+                minLength="3"
+                pattern="[a-zA-Z0-9_-]+"
+                title="Username can only contain letters, numbers, underscores, and hyphens"
+                style={{
+                  borderColor: 
+                    usernameStatus === "available" ? "#4CAF50" :
+                    usernameStatus === "taken" || usernameStatus === "invalid" ? "#f44336" :
+                    "#ccc"
+                }}
+              />
+              {username && (
+                <div style={{ 
+                  fontSize: "0.85rem", 
+                  marginTop: "-0.5rem", 
+                  marginBottom: "0.5rem",
+                  color: 
+                    usernameStatus === "available" ? "#4CAF50" :
+                    usernameStatus === "taken" || usernameStatus === "invalid" ? "#f44336" :
+                    "#666"
+                }}>
+                  {usernameStatus === "checking" && "⏳ Checking availability..."}
+                  {usernameStatus === "available" && "✅ Username available"}
+                  {usernameStatus === "taken" && "❌ Username already taken"}
+                  {usernameStatus === "invalid" && "❌ Invalid username format"}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         <label>Password</label>
         <input
@@ -122,6 +242,8 @@ function AuthForm({ onAuthSuccess }) {
             setIsSignUp(!isSignUp);
             setError("")
             setMessage("");
+            setUsername("");
+            setUsernameStatus("");
             setSignUpDisabled(false);
           }}
         >

@@ -3,22 +3,6 @@ import React from "react";
 function Navbar({ onToggleDarkMode }) {
   return (
     <>
-      {/* Logo - top-left */}
-      <div
-        style={{
-          position: "absolute",
-          top: "10px",
-          left: "10px",
-          zIndex: 999,
-        }}
-      >
-        <img
-          src="/gih.png"
-          alt="Repofy Logo"
-          style={{ height: "90px", width: "auto" }}
-        />
-      </div>
-
       {/* Dark Mode Button - top-right */}
       <div
         style={{
@@ -42,7 +26,7 @@ function Navbar({ onToggleDarkMode }) {
             display: "inline-block" // ✅ Prevent stretching
           }}
         >
-          Dark Mode🌓
+          Dark Mode
         </button>
       </div>
     </>
