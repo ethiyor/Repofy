@@ -13,7 +13,8 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -146,7 +147,7 @@ app.get("/profile/:userId", checkAuth, async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
       .from("user_profiles")
-      .select("user_id, username, display_name, bio, website, location, created_at")
+      .select("user_id, username, display_name, bio, website, location, created_at, avatar_url")
       .eq("user_id", userId)
       .single();
       
@@ -183,6 +184,7 @@ app.get("/profile/:userId", checkAuth, async (req, res) => {
         bio: null,
         website: null,
         location: null,
+        avatar_url: null,
         created_at: new Date().toISOString()
       };
       
@@ -204,7 +206,7 @@ app.get("/profile/:userId", checkAuth, async (req, res) => {
 
 // Create or update user profile
 app.post("/profile", checkAuth, async (req, res) => {
-  const { username, display_name, bio, website, location } = req.body;
+  const { username, display_name, bio, website, location, avatar_url } = req.body;
   
   // Validate username if provided
   if (username) {
@@ -238,7 +240,8 @@ app.post("/profile", checkAuth, async (req, res) => {
         display_name: display_name,
         bio: bio,
         website: website,
-        location: location
+        location: location,
+        avatar_url: avatar_url
       })
       .eq("user_id", req.user.id)
       .select()
@@ -255,7 +258,67 @@ app.post("/profile", checkAuth, async (req, res) => {
           email: req.user.email,
           bio: bio,
           website: website,
-          location: location
+          location: location,
+          avatar_url: avatar_url
+        }])
+        .select()
+        .single();
+
+      if (insertError) {
+        return res.status(500).json({ error: insertError.message });
+      }
+      
+      return res.json(insertData);
+    } else if (updateError) {
+      return res.status(500).json({ error: updateError.message });
+    }
+
+    res.json(updateData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Upload profile picture
+app.post("/profile/avatar", checkAuth, async (req, res) => {
+  const { avatar_data } = req.body;
+  
+  if (!avatar_data) {
+    return res.status(400).json({ error: "No avatar data provided" });
+  }
+  
+  // Validate that it's a base64 image
+  if (!avatar_data.startsWith('data:image/')) {
+    return res.status(400).json({ error: "Invalid image format" });
+  }
+  
+  // Check base64 data size (roughly 4/3 of original file size)
+  const sizeInBytes = (avatar_data.length * 3) / 4;
+  if (sizeInBytes > 10 * 1024 * 1024) { // 10MB limit
+    return res.status(413).json({ error: "Image too large. Please use an image smaller than 10MB." });
+  }
+  
+  try {
+    // Update the user's avatar_url in the database
+    const { data: updateData, error: updateError } = await supabaseAdmin
+      .from("user_profiles")
+      .update({
+        avatar_url: avatar_data
+      })
+      .eq("user_id", req.user.id)
+      .select()
+      .single();
+
+    if (updateError && updateError.code === 'PGRST116') {
+      // Profile doesn't exist, create it with avatar
+      const { data: insertData, error: insertError } = await supabaseAdmin
+        .from("user_profiles")
+        .insert([{
+          user_id: req.user.id,
+          username: req.user.email.split('@')[0],
+          display_name: req.user.email.split('@')[0],
+          email: req.user.email,
+          avatar_url: avatar_data
         }])
         .select()
         .single();
@@ -331,7 +394,7 @@ app.get("/repos", checkAuth, async (req, res) => {
     // Get all user profiles to match with repos
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from("user_profiles")
-      .select("user_id, username, display_name");
+      .select("user_id, username, display_name, avatar_url");
 
     // If user_profiles table doesn't exist yet, just return repos with fallback names
     if (profilesError && profilesError.code === '42P01') {
@@ -339,7 +402,8 @@ app.get("/repos", checkAuth, async (req, res) => {
       const enrichedData = repos.map(repo => ({
         ...repo,
         username: 'user_' + repo.user_id.substring(0, 8),
-        display_name: 'User ' + repo.user_id.substring(0, 8)
+        display_name: 'User ' + repo.user_id.substring(0, 8),
+        avatar_url: null
       }));
       return res.json(enrichedData);
     }
@@ -360,7 +424,8 @@ app.get("/repos", checkAuth, async (req, res) => {
       return {
         ...repo,
         username: profile?.username || 'user_' + repo.user_id.substring(0, 8),
-        display_name: profile?.display_name || profile?.username || 'User ' + repo.user_id.substring(0, 8)
+        display_name: profile?.display_name || profile?.username || 'User ' + repo.user_id.substring(0, 8),
+        avatar_url: profile?.avatar_url || null
       };
     });
     

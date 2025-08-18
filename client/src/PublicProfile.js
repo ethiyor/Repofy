@@ -23,15 +23,19 @@ function PublicProfile({ userProfile, onBack }) {
 
       <div className="profile-content">
         <div className="profile-info-section">
-          <div className="profile-avatar-large">
-            {getInitials(displayName)}
+          <div 
+            className="profile-avatar-large"
+            style={{
+              backgroundImage: userProfile?.avatar_url ? `url(${userProfile.avatar_url})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            {!userProfile?.avatar_url && getInitials(displayName)}
           </div>
           
           <div className="profile-details">
             <h3>{displayName}</h3>
-            {userProfile?.username && userProfile.username !== displayName && (
-              <p className="profile-username-large">@{userProfile.username}</p>
-            )}
             
             {userProfile?.bio && <p className="profile-bio">{userProfile.bio}</p>}
             

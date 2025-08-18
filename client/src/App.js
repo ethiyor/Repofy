@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import supabase from "./supabase";
 import AuthForm from "./AuthForm";
 import RepoList from "./RepoList";
+import MyRepositories from "./MyRepositories";
 import UserProfile from "./UserProfile";
 import PublicProfile from "./PublicProfile";
 import ConfirmPage from "./ConfirmPage";
@@ -23,6 +24,7 @@ function App() {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showPublicProfile, setShowPublicProfile] = useState(false);
+  const [showMyRepositories, setShowMyRepositories] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
   const toggleDarkMode = () => {
@@ -282,10 +284,29 @@ function App() {
     }
   };
 
+  const handleShowMyRepositories = () => {
+    setShowMyRepositories(true);
+    setShowUploadForm(false);
+    setShowProfile(false);
+    setShowPublicProfile(false);
+  };
+
+  const handleBackToCommunity = () => {
+    setShowMyRepositories(false);
+    setShowUploadForm(false);
+    setShowProfile(false);
+    setShowPublicProfile(false);
+  };
+
   return (
     <Router>
       <div className="App">
-        <Navbar onToggleDarkMode={toggleDarkMode} />
+        <Navbar 
+          onToggleDarkMode={toggleDarkMode} 
+          userProfile={userProfile}
+          session={session}
+          onShowProfile={() => setShowProfile(true)}
+        />
 
         <header className="app-header">
           <h1>Welcome to Repofy</h1>
@@ -312,6 +333,16 @@ function App() {
                       setSelectedUserProfile(null);
                     }}
                   />
+                ) : showMyRepositories ? (
+                  <MyRepositories
+                    session={session}
+                    repos={repos}
+                    setRepos={setRepos}
+                    onStar={starRepo}
+                    onDownload={downloadFile}
+                    onBack={handleBackToCommunity}
+                    uploadRepo={uploadRepo}
+                  />
                 ) : (
                   <Dashboard
                     session={session}
@@ -337,6 +368,7 @@ function App() {
                     setShowUploadForm={setShowUploadForm}
                     onShowProfile={() => setShowProfile(true)}
                     onShowUserProfile={showUserProfile}
+                    onShowMyRepositories={handleShowMyRepositories}
                   />
                 )
               ) : (
@@ -391,6 +423,7 @@ function Dashboard({
   setShowUploadForm,
   onShowProfile,
   onShowUserProfile,
+  onShowMyRepositories,
 }) {
   const hour = new Date().getHours();
   const greeting =
@@ -428,24 +461,6 @@ function Dashboard({
               Easily upload and manage your code repositories. Click the button below to create a new repository.
             </p>
           </div>
-          <div 
-            className="profile-info clickable-profile" 
-            onClick={onShowProfile}
-            title="Click to view profile"
-          >
-            <div className="profile-avatar">
-              {getDisplayName().charAt(0).toUpperCase()}
-            </div>
-            <div className="profile-text">
-              <span className="profile-name">{getDisplayName()}</span>
-              <span className="profile-username">@{userProfile?.username || session.user.email?.split('@')[0]}</span>
-            </div>
-          </div>
-        </div>
-        <div className="intro-actions">
-          <button onClick={logout} className="logout-btn">
-            Log Out
-          </button>
         </div>
         {session.user.email.endsWith(".edu") && (
           <div className="edu-badge">Verified .EDU Account</div>
@@ -454,84 +469,21 @@ function Dashboard({
 
       <RepoList
         session={session}
+        userProfile={userProfile}
         repos={repos}
         setRepos={setRepos}
         onStar={onStar}
         onDownload={onDownload}
         onShowProfile={onShowProfile}
         onShowUserProfile={onShowUserProfile}
+        onShowMyRepositories={onShowMyRepositories}
       />
 
-      <div className="upload-button-section">
-        <button onClick={toggleUploadForm} className="btn-primary">
-          {showUploadForm ? "Cancel Upload" : "Upload New Repository"}
+      <div className="main-actions">
+        <button onClick={logout} className="btn-primary" title="Log Out">
+          Log Out
         </button>
       </div>
-
-      {showUploadForm && (
-        <div className="upload-section">
-          <h3>Create a New Repository</h3>
-
-          <label><strong>Repository Title</strong></label>
-          <input
-            placeholder="Enter title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-
-          <label><strong>Description</strong></label>
-          <input
-            placeholder="Short description of your project"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-
-          <label><strong>Tags</strong> (comma-separated)</label>
-          <input
-            placeholder="#react, #api"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-          />
-
-          <label><strong>Visibility</strong></label>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ marginRight: '1rem' }}>
-              <input
-                type="radio"
-                name="visibility"
-                checked={isPublic}
-                onChange={() => setIsPublic(true)}
-              />
-            Public
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="visibility"
-              checked={!isPublic}
-              onChange={() => setIsPublic(false)}
-            />
-            Private
-          </label>
-        </div>
-
-          <label><strong>Code Content</strong></label>
-          <textarea
-           className="code-input"
-            placeholder="Paste your code here..."
-            rows={10}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
-
-          <div className="upload-actions">
-            <button onClick={uploadRepo} className="btn-primary">Upload Repository</button>
-            <button onClick={toggleUploadForm} className="btn-secondary">Cancel</button>
-          </div>
-          
-          {message && <div className="status-message">{message}</div>}
-        </div>
-      )}
     </div>
   );
 }

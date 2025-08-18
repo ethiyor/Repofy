@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://repofy-backend.onrender.com' 
   : 'http://localhost:4000';
 
-function RepoList({ session, repos, setRepos, onStar, onDownload, onShowProfile, onShowUserProfile }) {
+function RepoList({ session, userProfile, repos, setRepos, onStar, onDownload, onShowProfile, onShowUserProfile, onShowMyRepositories }) {
   const [loadingRepoId, setLoadingRepoId] = useState(null);
   const [commentTexts, setCommentTexts] = useState({});
   const [showComments, setShowComments] = useState({});
@@ -20,6 +20,7 @@ function RepoList({ session, repos, setRepos, onStar, onDownload, onShowProfile,
         user_id: repo.user_id,
         username: repo.username,
         display_name: repo.display_name,
+        avatar_url: repo.avatar_url,
         repos: []
       };
     }
@@ -31,9 +32,17 @@ function RepoList({ session, repos, setRepos, onStar, onDownload, onShowProfile,
   const currentUserRepos = groupedRepos[session.user.id] || { 
     repos: [], 
     user_id: session.user.id, 
-    display_name: session.user.email?.split('@')[0] || 'Your Account',
-    username: session.user.email?.split('@')[0] || 'your-account'
+    display_name: userProfile?.display_name || session.user.email?.split('@')[0] || 'Your Account',
+    username: userProfile?.username || session.user.email?.split('@')[0] || 'your-account',
+    avatar_url: userProfile?.avatar_url || null
   };
+  
+  // If current user has repos, update their profile data with latest from userProfile
+  if (groupedRepos[session.user.id]) {
+    currentUserRepos.display_name = userProfile?.display_name || currentUserRepos.display_name;
+    currentUserRepos.username = userProfile?.username || currentUserRepos.username;
+    currentUserRepos.avatar_url = userProfile?.avatar_url || currentUserRepos.avatar_url;
+  }
   const otherUsersRepos = Object.values(groupedRepos).filter(user => user.user_id !== session.user.id);
 
   // Sort other users by username
@@ -68,17 +77,19 @@ function RepoList({ session, repos, setRepos, onStar, onDownload, onShowProfile,
             onClick={() => handleProfileClick(user, isCurrentUser)}
             title={isCurrentUser ? "Click to view your profile" : `View ${user.display_name}'s profile`}
           >
-            <div className="profile-avatar">
-              {user.display_name.charAt(0).toUpperCase()}
+            <div 
+              className="profile-avatar"
+              style={{
+                backgroundImage: user.avatar_url ? `url(${user.avatar_url})` : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+            >
+              {!user.avatar_url && user.display_name.charAt(0).toUpperCase()}
             </div>
             <span className="profile-name">{user.display_name}</span>
-            {user.username && user.username !== user.display_name && (
-              <span className="profile-username">@{user.username}</span>
-            )}
           </div>
-          {isCurrentUser && (
-            <span className="your-repos-badge">Your Repositories</span>
-          )}
+       
         </h3>
         <span className="repo-count">
           {user.repos.length} {user.repos.length === 1 ? 'repository' : 'repositories'}
@@ -90,14 +101,14 @@ function RepoList({ session, repos, setRepos, onStar, onDownload, onShowProfile,
           <div key={repo.id} className={`repo-card ${expandedRepos[repo.id] ? 'expanded' : 'collapsed'}`}>
             <div className="repo-header" onClick={() => toggleRepoExpansion(repo.id)} style={{ cursor: 'pointer' }}>
               <div className="repo-title-section">
-                <h4>{repo.name}</h4>
-                <div className="repo-meta">
+                <h4>
+                  {repo.name} 
                   {repo.is_public ? (
-                    <span className="public-badge">Public</span>
+                    <span className="public-badge inline">Public</span>
                   ) : (
-                    <span className="private-badge">Private</span>
+                    <span className="private-badge inline">Private</span>
                   )}
-                </div>
+                </h4>
               </div>
               <div className="expand-indicator">
                 {expandedRepos[repo.id] ? '▼' : '▶'}
@@ -317,29 +328,24 @@ function RepoList({ session, repos, setRepos, onStar, onDownload, onShowProfile,
 
   return (
     <div className="repo-list">
-      <h2>Repository Collection</h2>
-      <p>Explore our curated collection of code repositories</p>
-
-      <div className="repositories-container">
-        {/* Left Column - Current User's Repos */}
-        <div className="user-repos-column">
-          <div className="column-header">
-            <h2>Your Repositories</h2>
-          </div>
-          {currentUserRepos.repos.length > 0 ? (
-            renderUserSection(currentUserRepos, true)
-          ) : (
-            <div className="empty-state">
-              <p>Start by uploading your first repository!</p>
-            </div>
-          )}
+      <div className="repo-list-header">
+        <div className="header-content">
+          <h2>Community Repositories</h2>
+          <p>Explore our curated collection of code repositories from the community</p>
         </div>
+        <div className="header-actions">
+          <button 
+            onClick={onShowMyRepositories}
+            className="btn-primary my-repos-btn"
+          >
+            📁 My Repositories ({repos.filter(repo => repo.user_id === session.user.id).length})
+          </button>
+        </div>
+      </div>
 
-        {/* Right Column - Other Users' Repos */}
-        <div className="other-repos-column">
-          <div className="column-header">
-            <h2>Community Repositories</h2>
-          </div>
+      <div className="repositories-container community-only">
+        {/* Only Community Repositories */}
+        <div className="community-repos-section">
           {sortedOtherUsers.length > 0 ? (
             sortedOtherUsers.map((userGroup) => 
               renderUserSection(userGroup, false)
@@ -347,6 +353,7 @@ function RepoList({ session, repos, setRepos, onStar, onDownload, onShowProfile,
           ) : (
             <div className="empty-state">
               <p>No community repositories yet!</p>
+              <p>Be the first to share your code with the community!</p>
             </div>
           )}
         </div>
