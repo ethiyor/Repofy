@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://repofy-backend.onrender.com' 
   : 'http://localhost:4000';
 
-function RepoList({ session, repos, setRepos, onStar, onDownload }) {
+function RepoList({ session, repos, setRepos, onStar, onDownload, onShowProfile, onShowUserProfile }) {
   const [loadingRepoId, setLoadingRepoId] = useState(null);
   const [commentTexts, setCommentTexts] = useState({});
   const [showComments, setShowComments] = useState({});
@@ -41,12 +41,33 @@ function RepoList({ session, repos, setRepos, onStar, onDownload }) {
     a.display_name.localeCompare(b.display_name)
   );
 
+  // Handle profile click - show profile for current user, public profile for others
+  const handleProfileClick = (user, isCurrentUser) => {
+    console.log("Profile clicked:", user.display_name, "isCurrentUser:", isCurrentUser);
+    
+    if (isCurrentUser) {
+      console.log("Calling onShowProfile for current user");
+      onShowProfile(); // Navigate to full profile page for current user
+    } else {
+      if (onShowUserProfile) {
+        console.log("Calling onShowUserProfile with userId:", user.user_id);
+        onShowUserProfile(user.user_id); // Show public profile for other users
+      } else {
+        console.error("onShowUserProfile function not available");
+      }
+    }
+  };
+
   // Render user section component
   const renderUserSection = (user, isCurrentUser = false) => (
     <div key={user.user_id} className="user-section">
       <div className="user-header">
         <h3 className="user-title">
-          <div className="profile-info">
+          <div 
+            className="profile-info clickable-profile" 
+            onClick={() => handleProfileClick(user, isCurrentUser)}
+            title={isCurrentUser ? "Click to view your profile" : `View ${user.display_name}'s profile`}
+          >
             <div className="profile-avatar">
               {user.display_name.charAt(0).toUpperCase()}
             </div>
@@ -102,10 +123,30 @@ function RepoList({ session, repos, setRepos, onStar, onDownload }) {
                   </div>
                 )}
 
+                {/* Show files immediately when expanded */}
+                <div className="file-list">
+                  {loadingRepoId === repo.id ? (
+                    <p>Loading files...</p>
+                  ) : repo.files && repo.files.length > 0 ? (
+                    repo.files.map((file) => (
+                      <div key={file.id} className="file-block">
+                        <div className="file-header">
+                          <strong>{file.name}</strong>
+                          <div>
+                            <button className="btn-small" onClick={() => onDownload(file)}>Download</button>
+                            <button className="btn-small" disabled>Edit</button>
+                          </div>
+                        </div>
+                        <pre className="file-content">{file.content}</pre>
+                      </div>
+                    ))
+                  ) : (
+                    <p>No files found in this repository.</p>
+                  )}
+                </div>
+
+                {/* Action buttons moved below file content */}
                 <div className="repo-actions">
-                  <button className="btn-secondary" onClick={() => toggleFiles(repo.id)}>
-                    {repo.showFiles ? "Hide Files" : "View Files"}
-                  </button>
                   <button className="btn-star" onClick={() => onStar(repo.id)}>
                     Star {repo.stars || 0}
                   </button>
@@ -119,29 +160,6 @@ function RepoList({ session, repos, setRepos, onStar, onDownload }) {
                   </button>
                 </div>
               </>
-            )}
-
-            {expandedRepos[repo.id] && repo.showFiles && (
-              <div className="file-list">
-                {loadingRepoId === repo.id ? (
-                  <p>Loading files...</p>
-                ) : repo.files.length > 0 ? (
-                  repo.files.map((file) => (
-                    <div key={file.id} className="file-block">
-                      <div className="file-header">
-                        <strong>{file.name}</strong>
-                        <div>
-                          <button className="btn-small" onClick={() => onDownload(file)}>Download</button>
-                          <button className="btn-small" disabled>Edit</button>
-                        </div>
-                      </div>
-                      <pre className="file-content">{file.content}</pre>
-                    </div>
-                  ))
-                ) : (
-                  <p>No files found in this repository.</p>
-                )}
-              </div>
             )}
 
             {expandedRepos[repo.id] && showComments[repo.id] && (
@@ -231,11 +249,44 @@ function RepoList({ session, repos, setRepos, onStar, onDownload }) {
     }));
   };
 
-  const toggleRepoExpansion = (repoId) => {
+  const toggleRepoExpansion = async (repoId) => {
+    const newExpandedState = !expandedRepos[repoId];
     setExpandedRepos(prev => ({
       ...prev,
-      [repoId]: !prev[repoId]
+      [repoId]: newExpandedState
     }));
+
+    // If expanding and files haven't been loaded yet, load them automatically
+    if (newExpandedState) {
+      const repo = repos.find(r => r.id === repoId);
+      if (repo && !repo.showFiles) {
+        setLoadingRepoId(repoId);
+        try {
+          const res = await fetch(`${API_BASE_URL}/repos/${repoId}/files`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+
+          if (res.ok) {
+            const files = await res.json();
+            const updatedRepos = [...repos];
+            const repoIndex = updatedRepos.findIndex((r) => r.id === repoId);
+            updatedRepos[repoIndex] = {
+              ...updatedRepos[repoIndex],
+              files: files,
+              showFiles: true
+            };
+            setRepos(updatedRepos);
+          } else {
+            console.error("Failed to load files");
+          }
+        } catch (err) {
+          console.error("Error fetching files:", err);
+        }
+        setLoadingRepoId(null);
+      }
+    }
   };
 
   const truncateDescription = (description, maxWords = 10) => {

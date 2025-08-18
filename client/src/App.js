@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import supabase from "./supabase";
 import AuthForm from "./AuthForm";
 import RepoList from "./RepoList";
+import UserProfile from "./UserProfile";
+import PublicProfile from "./PublicProfile";
 import ConfirmPage from "./ConfirmPage";
 import { getUserProfile } from "./api";
 import "./App.css";
@@ -19,6 +21,9 @@ function App() {
   const [repos, setRepos] = useState([]);
   const [isPublic, setIsPublic] = useState(true);
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showPublicProfile, setShowPublicProfile] = useState(false);
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
   const toggleDarkMode = () => {
     const isDark = document.body.classList.toggle("dark");
@@ -198,6 +203,85 @@ function App() {
     link.click();
   };
 
+  const fetchPublicProfile = async (userId) => {
+    console.log("Fetching public profile for userId:", userId);
+    
+    // First, try to get profile data from current repos (which already have user info)
+    const userRepos = repos.filter(repo => repo.user_id === userId);
+    console.log("Found user repos:", userRepos);
+    
+    if (userRepos.length > 0) {
+      const repoUserData = userRepos[0]; // Get user data from any repo
+      console.log("User data from repos:", repoUserData);
+      
+      // Try to fetch detailed profile from backend first
+      try {
+        const response = await fetch(`${API_BASE_URL}/profile/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+
+        console.log("Response status:", response.status);
+
+        if (response.ok) {
+          const profileData = await response.json();
+          console.log("Fetched detailed profile data:", profileData);
+          console.log("Profile bio:", profileData.bio);
+          console.log("Profile location:", profileData.location);
+          console.log("Profile website:", profileData.website);
+          
+          // Merge backend data with repo count and ensure display_name/username fallbacks
+          const completeProfile = {
+            ...profileData,
+            repo_count: userRepos.length,
+            display_name: profileData.display_name || repoUserData.display_name || repoUserData.username || 'User ' + userId.substring(0, 8),
+            username: profileData.username || repoUserData.username || 'user_' + userId.substring(0, 8)
+          };
+          console.log("Complete profile being returned:", completeProfile);
+          return completeProfile;
+        } else {
+          console.log("Backend profile not found, using repo data fallback");
+        }
+      } catch (error) {
+        console.error("Error fetching from backend, using fallback:", error);
+      }
+      
+      // Create a basic profile from repo data as fallback
+      const fallbackProfile = {
+        user_id: userId,
+        username: repoUserData.username || 'user_' + userId.substring(0, 8),
+        display_name: repoUserData.display_name || repoUserData.username || 'User ' + userId.substring(0, 8),
+        bio: null,
+        website: null,
+        location: null,
+        created_at: null,
+        repo_count: userRepos.length
+      };
+      
+      return fallbackProfile;
+    } else {
+      console.error("No repositories found for user, cannot create profile");
+      return null;
+    }
+  };
+
+  const showUserProfile = async (userId) => {
+    console.log("showUserProfile called with userId:", userId);
+    console.log("Current state - showProfile:", showProfile, "showPublicProfile:", showPublicProfile);
+    
+    const profile = await fetchPublicProfile(userId);
+    console.log("Fetched profile:", profile);
+    if (profile) {
+      console.log("Setting selectedUserProfile and showPublicProfile to true");
+      setSelectedUserProfile(profile);
+      setShowPublicProfile(true);
+      console.log("State should now be updated");
+    } else {
+      console.error("Failed to fetch profile - no repositories found for this user");
+    }
+  };
+
   return (
     <Router>
       <div className="App">
@@ -213,29 +297,48 @@ function App() {
             path="/"
             element={
               session ? (
-                <Dashboard
-                  session={session}
-                  userProfile={userProfile}
-                  logout={logout}
-                  uploadRepo={uploadRepo}
-                  title={title}
-                  description={description}
-                  tags={tags}
-                  code={code}
-                  setTitle={setTitle}
-                  setDescription={setDescription}
-                  setTags={setTags}
-                  setCode={setCode}
-                  message={message}
-                  repos={repos}
-                  setRepos={setRepos}
-                  onStar={starRepo}
-                  onDownload={downloadFile}
-                  isPublic={isPublic}
-                  setIsPublic={setIsPublic}
-                  showUploadForm={showUploadForm}
-                  setShowUploadForm={setShowUploadForm}
-                />
+                showProfile ? (
+                  <UserProfile
+                    session={session}
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
+                    onBack={() => setShowProfile(false)}
+                  />
+                ) : showPublicProfile ? (
+                  <PublicProfile
+                    userProfile={selectedUserProfile}
+                    onBack={() => {
+                      setShowPublicProfile(false);
+                      setSelectedUserProfile(null);
+                    }}
+                  />
+                ) : (
+                  <Dashboard
+                    session={session}
+                    userProfile={userProfile}
+                    logout={logout}
+                    uploadRepo={uploadRepo}
+                    title={title}
+                    description={description}
+                    tags={tags}
+                    code={code}
+                    setTitle={setTitle}
+                    setDescription={setDescription}
+                    setTags={setTags}
+                    setCode={setCode}
+                    message={message}
+                    repos={repos}
+                    setRepos={setRepos}
+                    onStar={starRepo}
+                    onDownload={downloadFile}
+                    isPublic={isPublic}
+                    setIsPublic={setIsPublic}
+                    showUploadForm={showUploadForm}
+                    setShowUploadForm={setShowUploadForm}
+                    onShowProfile={() => setShowProfile(true)}
+                    onShowUserProfile={showUserProfile}
+                  />
+                )
               ) : (
                 <>
                   <p className="cta-text">
@@ -286,6 +389,8 @@ function Dashboard({
   setIsPublic,
   showUploadForm,
   setShowUploadForm,
+  onShowProfile,
+  onShowUserProfile,
 }) {
   const hour = new Date().getHours();
   const greeting =
@@ -316,16 +421,30 @@ function Dashboard({
   return (
     <div>
       <div className="intro">
-        <h2>{greeting}, {getDisplayName()}!</h2>
-        <p>
-          Easily upload and manage your code repositories. Click the button below to create a new repository.
-        </p>
+        <div className="intro-header">
+          <div>
+            <h2>{greeting}, {getDisplayName()}!</h2>
+            <p>
+              Easily upload and manage your code repositories. Click the button below to create a new repository.
+            </p>
+          </div>
+          <div 
+            className="profile-info clickable-profile" 
+            onClick={onShowProfile}
+            title="Click to view profile"
+          >
+            <div className="profile-avatar">
+              {getDisplayName().charAt(0).toUpperCase()}
+            </div>
+            <div className="profile-text">
+              <span className="profile-name">{getDisplayName()}</span>
+              <span className="profile-username">@{userProfile?.username || session.user.email?.split('@')[0]}</span>
+            </div>
+          </div>
+        </div>
         <div className="intro-actions">
           <button onClick={logout} className="logout-btn">
             Log Out
-          </button>
-          <button onClick={toggleUploadForm} className="btn-primary">
-            {showUploadForm ? "Cancel Upload" : "Upload New Repository"}
           </button>
         </div>
         {session.user.email.endsWith(".edu") && (
@@ -333,7 +452,21 @@ function Dashboard({
         )}
       </div>
 
-      {message && <div className="status-message">{message}</div>}
+      <RepoList
+        session={session}
+        repos={repos}
+        setRepos={setRepos}
+        onStar={onStar}
+        onDownload={onDownload}
+        onShowProfile={onShowProfile}
+        onShowUserProfile={onShowUserProfile}
+      />
+
+      <div className="upload-button-section">
+        <button onClick={toggleUploadForm} className="btn-primary">
+          {showUploadForm ? "Cancel Upload" : "Upload New Repository"}
+        </button>
+      </div>
 
       {showUploadForm && (
         <div className="upload-section">
@@ -395,16 +528,10 @@ function Dashboard({
             <button onClick={uploadRepo} className="btn-primary">Upload Repository</button>
             <button onClick={toggleUploadForm} className="btn-secondary">Cancel</button>
           </div>
+          
+          {message && <div className="status-message">{message}</div>}
         </div>
       )}
-
-      <RepoList
-        session={session}
-        repos={repos}
-        setRepos={setRepos}
-        onStar={onStar}
-        onDownload={onDownload}
-      />
     </div>
   );
 }

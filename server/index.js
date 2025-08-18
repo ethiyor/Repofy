@@ -138,6 +138,70 @@ app.get("/profile", checkAuth, async (req, res) => {
   res.json(data || { user_id: req.user.id, email: req.user.email });
 });
 
+// Get public user profile by user ID
+app.get("/profile/:userId", checkAuth, async (req, res) => {
+  const { userId } = req.params;
+  console.log("Getting public profile for userId:", userId);
+  
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("user_profiles")
+      .select("user_id, username, display_name, bio, website, location, created_at")
+      .eq("user_id", userId)
+      .single();
+      
+    console.log("Database query result:", { data, error });
+      
+    if (error && error.code !== 'PGRST116') {
+      return res.status(500).json({ error: error.message });
+    }
+    
+    if (!data) {
+      // If no profile exists, try to get basic info from repos and create a fallback profile
+      console.log("No profile found, checking repos for user info");
+      
+      const { data: repos, error: reposError } = await supabaseAdmin
+        .from("repos")
+        .select("user_id")
+        .eq("user_id", userId)
+        .limit(1);
+        
+      if (reposError) {
+        console.error("Error checking repos:", reposError);
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      if (!repos || repos.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Create a basic fallback profile
+      const fallbackProfile = {
+        user_id: userId,
+        username: 'user_' + userId.substring(0, 8),
+        display_name: 'User ' + userId.substring(0, 8),
+        bio: null,
+        website: null,
+        location: null,
+        created_at: new Date().toISOString()
+      };
+      
+      console.log("Sending fallback profile data:", fallbackProfile);
+      return res.json(fallbackProfile);
+    }
+    
+    // Don't include email in public profile for privacy
+    console.log("Sending profile data:", data);
+    console.log("Profile bio in backend:", data.bio);
+    console.log("Profile location in backend:", data.location);
+    console.log("Profile website in backend:", data.website);
+    res.json(data);
+  } catch (err) {
+    console.error("Error in public profile endpoint:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create or update user profile
 app.post("/profile", checkAuth, async (req, res) => {
   const { username, display_name, bio, website, location } = req.body;
@@ -206,6 +270,46 @@ app.post("/profile", checkAuth, async (req, res) => {
     }
 
     res.json(updateData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete user profile and account
+app.delete("/profile", checkAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Delete user's repositories first (this will cascade delete files)
+    const { error: reposError } = await supabaseAdmin
+      .from("repos")
+      .delete()
+      .eq("user_id", userId);
+
+    if (reposError) {
+      console.error("Error deleting user repos:", reposError);
+      // Continue with profile deletion even if repos deletion fails
+    }
+
+    // Delete user profile
+    const { error: profileError } = await supabaseAdmin
+      .from("user_profiles")
+      .delete()
+      .eq("user_id", userId);
+
+    if (profileError) {
+      console.error("Error deleting user profile:", profileError);
+      // Continue with user deletion even if profile deletion fails
+    }
+
+    // Delete the actual user account from auth.users
+    const { error: userError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+    if (userError) {
+      return res.status(500).json({ error: "Failed to delete user account: " + userError.message });
+    }
+
+    res.json({ success: true, message: "Account deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
