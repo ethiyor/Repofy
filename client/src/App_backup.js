@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import supabase from "./supabase";
 import AuthForm from "./AuthForm";
 import RepoList from "./RepoList";
 import MyRepositories from "./MyRepositories";
@@ -7,6 +8,7 @@ import UserProfile from "./UserProfile";
 import PublicProfile from "./PublicProfile";
 import ConfirmPage from "./ConfirmPage";
 import GitHubCallbackPage from "./GitHubCallbackPage";
+import { getUserProfile } from "./api";
 import "./App.css";
 import Navbar from "./Navbar";
 import NotificationSystem from "./components/NotificationSystem";
@@ -15,7 +17,7 @@ import { useRepositories } from "./hooks/useRepositories";
 
 function App() {
   const { session, userProfile, setUserProfile, loading, logout } = useAuth();
-  const { repos, setRepos, uploadRepo: hookUploadRepo, starRepo: hookStarRepo } = useRepositories(session);
+  const { repos, setRepos, uploadRepo: hookUploadRepo, starRepo: hookStarRepo, error: repoError } = useRepositories(session);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -83,6 +85,56 @@ function App() {
       window.notify?.success("Repository starred successfully!");
     } catch (err) {
       window.notify?.error(err.message);
+    }
+  };
+      if (!repoRes.ok) {
+        setMessage("❌ Error creating repo: " + repoData.error);
+        return;
+      }
+
+      const repo_id = repoData.id;
+
+      const fileRes = await fetch(`${API_BASE_URL}/upload`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: "main.js", content: code, repo_id }),
+      });
+
+      if (!fileRes.ok) {
+        const err = await fileRes.json();
+        setMessage("File upload failed: " + err.error);
+        return;
+      }
+
+      setMessage("Repository and file uploaded successfully!");
+      setTitle("");
+      setDescription("");
+      setTags("");
+      setCode("");
+      setIsPublic(true);
+      setShowUploadForm(false); // Close the form after successful upload
+      await fetchRepos(token);
+    } catch (err) {
+      setMessage("❌ Unexpected error: " + err.message);
+    }
+  };
+
+  const starRepo = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/repos/${id}/star`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (res.ok) await fetchRepos(session.access_token);
+      else setMessage("❌ Failed to star repository");
+    } catch (err) {
+      setMessage("❌ Error starring repository");
     }
   };
 
@@ -187,26 +239,9 @@ function App() {
     setShowPublicProfile(false);
   };
 
-  const handleLogout = async () => {
-    const result = await logout();
-    window.notify?.success(result);
-  };
-
-  if (loading) {
-    return (
-      <div className="App">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading Repofy...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <Router>
       <div className="App">
-        <NotificationSystem />
         <Navbar 
           onToggleDarkMode={toggleDarkMode} 
           userProfile={userProfile}
@@ -253,7 +288,7 @@ function App() {
                   <Dashboard
                     session={session}
                     userProfile={userProfile}
-                    logout={handleLogout}
+                    logout={logout}
                     uploadRepo={uploadRepo}
                     title={title}
                     description={description}
@@ -283,7 +318,7 @@ function App() {
                     Sign in to create, upload, and explore your repositories!
                   </p>
                   <AuthForm 
-                    onAuthSuccess={() => {}} 
+                    onAuthSuccess={setSession} 
                     isSignUp={isSignUp}
                     setIsSignUp={setIsSignUp}
                   />
@@ -369,7 +404,7 @@ function Dashboard({
           <div>
             <h2>{greeting}, {getDisplayName()}!</h2>
             <p>
-              Easily upload and manage your code repositories. Click the buttons below to get started.
+              Easily upload and manage your code repositories.
             </p>
           </div>
         </div>
@@ -378,123 +413,17 @@ function Dashboard({
         )}
       </div>
 
-      {/* Main Action Buttons */}
-      <div className="dashboard-actions">
-        <button 
-          onClick={onShowMyRepositories} 
-          className="btn-primary action-btn"
-          title="View and manage your repositories"
-        >
-          📚 My Repositories
-        </button>
-        <button 
-          onClick={toggleUploadForm} 
-          className="btn-secondary action-btn"
-          title="Create a new repository"
-        >
-          ➕ {showUploadForm ? "Cancel Upload" : "Upload New Repository"}
-        </button>
-      </div>
-
-      {/* Upload Form */}
-      {showUploadForm && (
-        <div className="upload-section">
-          <div className="upload-form">
-            <h3>📤 Create New Repository</h3>
-            
-            <div className="form-group">
-              <label htmlFor="repo-title">Repository Name *</label>
-              <input
-                id="repo-title"
-                type="text"
-                placeholder="Enter repository name..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="repo-description">Description *</label>
-              <textarea
-                id="repo-description"
-                placeholder="Describe your repository..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="form-input"
-                rows={3}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="repo-tags">Tags</label>
-              <input
-                id="repo-tags"
-                type="text"
-                placeholder="javascript, react, nodejs (comma-separated)"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="repo-code">Initial Code Content *</label>
-              <textarea
-                id="repo-code"
-                placeholder="Paste your code here..."
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="form-input code-input"
-                rows={8}
-              />
-            </div>
-
-            <div className="form-group checkbox-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                />
-                <span className="checkbox-text">Make this repository public</span>
-              </label>
-            </div>
-
-            <div className="form-actions">
-              <button 
-                onClick={uploadRepo} 
-                className="btn-primary"
-                disabled={!title || !description || !code}
-              >
-                🚀 Create Repository
-              </button>
-              <button 
-                onClick={toggleUploadForm} 
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Community Repositories */}
-      <div className="community-section">
-        <h3>🌐 Community Repositories</h3>
-        <RepoList
-          session={session}
-          userProfile={userProfile}
-          repos={repos}
-          setRepos={setRepos}
-          onStar={onStar}
-          onDownload={onDownload}
-          onShowProfile={onShowProfile}
-          onShowUserProfile={onShowUserProfile}
-          onShowMyRepositories={onShowMyRepositories}
-        />
-      </div>
+      <RepoList
+        session={session}
+        userProfile={userProfile}
+        repos={repos}
+        setRepos={setRepos}
+        onStar={onStar}
+        onDownload={onDownload}
+        onShowProfile={onShowProfile}
+        onShowUserProfile={onShowUserProfile}
+        onShowMyRepositories={onShowMyRepositories}
+      />
 
       <div className="main-actions">
         <button onClick={logout} className="btn-primary" title="Log Out">

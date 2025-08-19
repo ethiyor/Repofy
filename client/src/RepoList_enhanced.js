@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import AdvancedSearch from "./components/AdvancedSearch";
+import Analytics from "./components/Analytics";
 import "./App.css";
 
 // Use environment-based URLs
@@ -13,6 +14,7 @@ function RepoList({ session, userProfile, repos, setRepos, onStar, onDownload, o
   const [showComments, setShowComments] = useState({});
   const [expandedRepos, setExpandedRepos] = useState({});
   const [filteredRepos, setFilteredRepos] = useState(repos);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list'
 
   // Update filtered repos when repos change
@@ -381,8 +383,21 @@ function RepoList({ session, userProfile, repos, setRepos, onStar, onDownload, o
               ☰
             </button>
           </div>
+          
+          <button
+            onClick={() => setShowAnalytics(!showAnalytics)}
+            className={`analytics-toggle ${showAnalytics ? 'active' : ''}`}
+            title="Toggle Analytics"
+          >
+            📊 Analytics
+          </button>
         </div>
       </div>
+
+      {/* Analytics Section */}
+      {showAnalytics && (
+        <Analytics repos={repos} session={session} />
+      )}
 
       {/* Results Summary */}
       <div className="results-summary">

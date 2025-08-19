@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Analytics from "./components/Analytics";
 import "./App.css";
 
 // Use environment-based URLs
@@ -12,6 +13,7 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
   const [showComments, setShowComments] = useState({});
   const [expandedRepos, setExpandedRepos] = useState({});
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   
   // Upload form state
   const [title, setTitle] = useState("");
@@ -237,9 +239,152 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
         <button onClick={onBack} className="btn-secondary back-btn">
           ← Back to Community
         </button>
-        <h1>My Repositories</h1>
+        <h1>📚 My Repositories</h1>
+        
+        <div className="header-actions">
+          <button 
+            onClick={() => setShowAnalytics(!showAnalytics)} 
+            className={`btn-secondary analytics-btn ${showAnalytics ? 'active' : ''}`}
+          >
+            📊 {showAnalytics ? 'Hide' : 'Show'} Analytics
+          </button>
+          <button 
+            onClick={toggleUploadForm} 
+            className="btn-primary upload-btn"
+          >
+            ➕ {showUploadForm ? 'Cancel' : 'New Repository'}
+          </button>
+        </div>
       </div>
 
+      {/* Message Display */}
+      {message && (
+        <div className={`message ${message.includes('❌') ? 'error' : 'success'}`}>
+          {message}
+        </div>
+      )}
+
+      {/* Analytics Section */}
+      {showAnalytics && (
+        <div className="analytics-section">
+          <Analytics repos={currentUserRepos} session={session} />
+        </div>
+      )}
+
+      {/* Upload Form */}
+      {showUploadForm && (
+        <div className="upload-section">
+          <div className="upload-form">
+            <h3>Create New Repository</h3>
+            
+            <div className="form-group">
+              <label htmlFor="title">Repository Name *</label>
+              <input
+                id="title"
+                type="text"
+                placeholder="Enter repository name..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="description">Description</label>
+              <textarea
+                id="description"
+                placeholder="Describe your repository..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="form-input"
+                rows={3}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="tags">Tags (comma-separated)</label>
+              <input
+                id="tags"
+                type="text"
+                placeholder="javascript, react, nodejs..."
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="code">Code Content *</label>
+              <textarea
+                id="code"
+                placeholder="Paste your code here..."
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="form-input code-input"
+                rows={8}
+              />
+            </div>
+
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                />
+                <span className="checkbox-text">Make this repository public</span>
+              </label>
+            </div>
+
+            <div className="form-actions">
+              <button 
+                onClick={handleUploadRepo} 
+                className="btn-primary"
+                disabled={!title.trim() || !code.trim()}
+              >
+                🚀 Create Repository
+              </button>
+              <button 
+                onClick={toggleUploadForm} 
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Repository Summary */}
+      <div className="repo-summary">
+        <h3>Repository Overview</h3>
+        <div className="summary-stats">
+          <div className="stat-card">
+            <span className="stat-number">{currentUserRepos.length}</span>
+            <span className="stat-label">Total Repositories</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">
+              {currentUserRepos.reduce((sum, repo) => sum + (repo.star_count || 0), 0)}
+            </span>
+            <span className="stat-label">Total Stars</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">
+              {currentUserRepos.filter(repo => repo.is_public).length}
+            </span>
+            <span className="stat-label">Public Repos</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">
+              {currentUserRepos.filter(repo => !repo.is_public).length}
+            </span>
+            <span className="stat-label">Private Repos</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Repositories List */}
       <div className="repositories-list">
         {currentUserRepos.length > 0 ? (
           currentUserRepos.map((repo) => (

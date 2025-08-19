@@ -15,7 +15,7 @@ import { useRepositories } from "./hooks/useRepositories";
 
 function App() {
   const { session, userProfile, setUserProfile, loading, logout } = useAuth();
-  const { repos, setRepos, uploadRepo: hookUploadRepo, starRepo: hookStarRepo } = useRepositories(session);
+  const { repos, setRepos, uploadRepo: hookUploadRepo, starRepo: hookStarRepo, error: repoError } = useRepositories(session);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -369,7 +369,7 @@ function Dashboard({
           <div>
             <h2>{greeting}, {getDisplayName()}!</h2>
             <p>
-              Easily upload and manage your code repositories. Click the buttons below to get started.
+              Easily upload and manage your code repositories. Click the button below to create a new repository.
             </p>
           </div>
         </div>
@@ -378,123 +378,17 @@ function Dashboard({
         )}
       </div>
 
-      {/* Main Action Buttons */}
-      <div className="dashboard-actions">
-        <button 
-          onClick={onShowMyRepositories} 
-          className="btn-primary action-btn"
-          title="View and manage your repositories"
-        >
-          📚 My Repositories
-        </button>
-        <button 
-          onClick={toggleUploadForm} 
-          className="btn-secondary action-btn"
-          title="Create a new repository"
-        >
-          ➕ {showUploadForm ? "Cancel Upload" : "Upload New Repository"}
-        </button>
-      </div>
-
-      {/* Upload Form */}
-      {showUploadForm && (
-        <div className="upload-section">
-          <div className="upload-form">
-            <h3>📤 Create New Repository</h3>
-            
-            <div className="form-group">
-              <label htmlFor="repo-title">Repository Name *</label>
-              <input
-                id="repo-title"
-                type="text"
-                placeholder="Enter repository name..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="repo-description">Description *</label>
-              <textarea
-                id="repo-description"
-                placeholder="Describe your repository..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="form-input"
-                rows={3}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="repo-tags">Tags</label>
-              <input
-                id="repo-tags"
-                type="text"
-                placeholder="javascript, react, nodejs (comma-separated)"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="repo-code">Initial Code Content *</label>
-              <textarea
-                id="repo-code"
-                placeholder="Paste your code here..."
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="form-input code-input"
-                rows={8}
-              />
-            </div>
-
-            <div className="form-group checkbox-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                />
-                <span className="checkbox-text">Make this repository public</span>
-              </label>
-            </div>
-
-            <div className="form-actions">
-              <button 
-                onClick={uploadRepo} 
-                className="btn-primary"
-                disabled={!title || !description || !code}
-              >
-                🚀 Create Repository
-              </button>
-              <button 
-                onClick={toggleUploadForm} 
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Community Repositories */}
-      <div className="community-section">
-        <h3>🌐 Community Repositories</h3>
-        <RepoList
-          session={session}
-          userProfile={userProfile}
-          repos={repos}
-          setRepos={setRepos}
-          onStar={onStar}
-          onDownload={onDownload}
-          onShowProfile={onShowProfile}
-          onShowUserProfile={onShowUserProfile}
-          onShowMyRepositories={onShowMyRepositories}
-        />
-      </div>
+      <RepoList
+        session={session}
+        userProfile={userProfile}
+        repos={repos}
+        setRepos={setRepos}
+        onStar={onStar}
+        onDownload={onDownload}
+        onShowProfile={onShowProfile}
+        onShowUserProfile={onShowUserProfile}
+        onShowMyRepositories={onShowMyRepositories}
+      />
 
       <div className="main-actions">
         <button onClick={logout} className="btn-primary" title="Log Out">
