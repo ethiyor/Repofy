@@ -72,7 +72,8 @@ app.post("/signup", async (req, res) => {
     }
   }
 
-  const { data, error } = await supabase.auth.signUp({ 
+  // Email signup
+  const signUpData = { 
     email, 
     password,
     options: {
@@ -81,7 +82,9 @@ app.post("/signup", async (req, res) => {
         display_name: username ? username.trim() : null
       }
     }
-  });
+  };
+
+  const { data, error } = await supabase.auth.signUp(signUpData);
   
   if (error) return res.status(400).json({ error: error.message });
   
@@ -90,6 +93,7 @@ app.post("/signup", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
+  
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
@@ -249,13 +253,24 @@ app.post("/profile", checkAuth, async (req, res) => {
 
     if (updateError && updateError.code === 'PGRST116') {
       // Profile doesn't exist, create it
+      // Handle email and GitHub users
+      let fallbackUsername;
+      if (req.user.user_metadata?.user_name) {
+        // GitHub user - use GitHub username
+        fallbackUsername = req.user.user_metadata.user_name;
+      } else if (req.user.email) {
+        fallbackUsername = req.user.email.split('@')[0];
+      } else {
+        fallbackUsername = 'user';
+      }
+        
       const { data: insertData, error: insertError } = await supabaseAdmin
         .from("user_profiles")
         .insert([{
           user_id: req.user.id,
-          username: username?.toLowerCase() || req.user.email.split('@')[0],
-          display_name: display_name || username || req.user.email.split('@')[0],
-          email: req.user.email,
+          username: username?.toLowerCase() || fallbackUsername.toLowerCase(),
+          display_name: display_name || username || fallbackUsername,
+          email: req.user.email || null,
           bio: bio,
           website: website,
           location: location,
@@ -311,13 +326,23 @@ app.post("/profile/avatar", checkAuth, async (req, res) => {
 
     if (updateError && updateError.code === 'PGRST116') {
       // Profile doesn't exist, create it with avatar
+      let fallbackUsername;
+      if (req.user.user_metadata?.user_name) {
+        // GitHub user - use GitHub username
+        fallbackUsername = req.user.user_metadata.user_name;
+      } else if (req.user.email) {
+        fallbackUsername = req.user.email.split('@')[0];
+      } else {
+        fallbackUsername = 'user';
+      }
+        
       const { data: insertData, error: insertError } = await supabaseAdmin
         .from("user_profiles")
         .insert([{
           user_id: req.user.id,
-          username: req.user.email.split('@')[0],
-          display_name: req.user.email.split('@')[0],
-          email: req.user.email,
+          username: fallbackUsername.toLowerCase(),
+          display_name: fallbackUsername,
+          email: req.user.email || null,
           avatar_url: avatar_data
         }])
         .select()
@@ -454,8 +479,18 @@ async function ensureUserProfile(user) {
 
     if (checkError && checkError.code === 'PGRST116') {
       // Profile doesn't exist, create one
-      const username = user.user_metadata?.username || user.email.split('@')[0];
-      const display_name = user.user_metadata?.display_name || username;
+      let fallbackUsername;
+      if (user.user_metadata?.user_name) {
+        // GitHub user - use GitHub username
+        fallbackUsername = user.user_metadata.user_name;
+      } else if (user.email) {
+        fallbackUsername = user.email.split('@')[0];
+      } else {
+        fallbackUsername = 'user';
+      }
+      
+      const username = user.user_metadata?.username || fallbackUsername;
+      const display_name = user.user_metadata?.display_name || user.user_metadata?.full_name || username;
 
       const { error: insertError } = await supabaseAdmin
         .from("user_profiles")
@@ -463,7 +498,7 @@ async function ensureUserProfile(user) {
           user_id: user.id,
           username: username.toLowerCase(),
           display_name: display_name,
-          email: user.email
+          email: user.email || null
         }]);
 
       if (insertError) {
@@ -607,8 +642,18 @@ app.post("/admin/create-missing-profiles", async (req, res) => {
 
         if (!existingProfile) {
           // Create profile
-          const username = user.user_metadata?.username || user.email.split('@')[0];
-          const display_name = user.user_metadata?.display_name || username;
+          let fallbackUsername;
+          if (user.user_metadata?.user_name) {
+            // GitHub user - use GitHub username
+            fallbackUsername = user.user_metadata.user_name;
+          } else if (user.email) {
+            fallbackUsername = user.email.split('@')[0];
+          } else {
+            fallbackUsername = 'user';
+          }
+          
+          const username = user.user_metadata?.username || fallbackUsername;
+          const display_name = user.user_metadata?.display_name || user.user_metadata?.full_name || username;
 
           const { error: insertError } = await supabaseAdmin
             .from("user_profiles")
@@ -616,7 +661,7 @@ app.post("/admin/create-missing-profiles", async (req, res) => {
               user_id: user.id,
               username: username.toLowerCase(),
               display_name: display_name,
-              email: user.email
+              email: user.email || null
             }]);
 
           if (!insertError) {

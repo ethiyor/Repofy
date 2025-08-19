@@ -8,17 +8,37 @@ const FRONTEND_URL = process.env.NODE_ENV === 'production'
   ? 'https://repofy-frontend.onrender.com'
   : 'http://localhost:3000';
 
-function AuthForm({ onAuthSuccess }) {
+function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [verificationMethod, setVerificationMethod] = useState("email"); // "email" or "github"
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [signUpDisabled, setSignUpDisabled] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState(""); // "checking", "available", "taken", "invalid"
   const [usernameTimeout, setUsernameTimeout] = useState(null);
+
+  // Handle GitHub authentication
+  const handleGitHubAuth = async () => {
+    try {
+      setError("");
+      setMessage("Redirecting to GitHub...");
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${FRONTEND_URL}/auth/callback`
+        }
+      });
+      
+      if (error) throw error;
+    } catch (err) {
+      setError(err.message);
+      setMessage("");
+    }
+  };
 
   // Check username availability with debouncing
   useEffect(() => {
@@ -94,7 +114,14 @@ function AuthForm({ onAuthSuccess }) {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        // Validate email
+        if (!email.trim()) {
+          setError("Email is required.");
+          return;
+        }
+
+        // Sign up with email
+        const signUpData = {
           email,
           password,
           options: {
@@ -104,7 +131,9 @@ function AuthForm({ onAuthSuccess }) {
               display_name: username.trim()
             }
           },
-        });
+        };
+
+        const { error } = await supabase.auth.signUp(signUpData);
         if (error) throw error;
 
         setMessage(`✅ A verification email has been sent to ${email}. Please check your inbox and click the confirmation link.`);
@@ -112,6 +141,7 @@ function AuthForm({ onAuthSuccess }) {
         return;
       }
 
+      // Regular sign in
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
@@ -156,82 +186,147 @@ function AuthForm({ onAuthSuccess }) {
       {error && <p className="auth-error">{error}</p>}
       {message && <p className="auth-success">{message}</p>}
 
+      {/* Main auth form */}
       <form onSubmit={handleSubmit} className="auth-form">
-        <label>Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          required
-        />
-
         {isSignUp && (
-          <>
-            <label>Username</label>
-            <div style={{ position: "relative" }}>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="your_username"
-                required
-                minLength="3"
-                pattern="[a-zA-Z0-9_-]+"
-                title="Username can only contain letters, numbers, underscores, and hyphens"
-                style={{
-                  borderColor: 
-                    usernameStatus === "available" ? "#4CAF50" :
-                    usernameStatus === "taken" || usernameStatus === "invalid" ? "#f44336" :
-                    "#ccc"
-                }}
-              />
-              {username && (
-                <div style={{ 
-                  fontSize: "0.85rem", 
-                  marginTop: "-0.5rem", 
-                  marginBottom: "0.5rem",
-                  color: 
-                    usernameStatus === "available" ? "#4CAF50" :
-                    usernameStatus === "taken" || usernameStatus === "invalid" ? "#f44336" :
-                    "#666"
-                }}>
-                  {usernameStatus === "checking" && "⏳ Checking availability..."}
-                  {usernameStatus === "available" && "✅ Username available"}
-                  {usernameStatus === "taken" && "❌ Username already taken"}
-                  {usernameStatus === "invalid" && "❌ Invalid username format"}
-                </div>
-              )}
+          <div className="verification-method-selector">
+            <label>Verification Method</label>
+            <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <input
+                  type="radio"
+                  name="verificationMethod"
+                  value="email"
+                  checked={verificationMethod === "email"}
+                  onChange={(e) => setVerificationMethod(e.target.value)}
+                />
+                📧 Email
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <input
+                  type="radio"
+                  name="verificationMethod"
+                  value="github"
+                  checked={verificationMethod === "github"}
+                  onChange={(e) => setVerificationMethod(e.target.value)}
+                />
+                🐙 GitHub
+              </label>
             </div>
+          </div>
+        )}
+
+        {verificationMethod === "email" ? (
+          <>
+            <label>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+            />
           </>
-        )}
+        ) : verificationMethod === "github" ? (
+          <div style={{ textAlign: "center", padding: "1rem", backgroundColor: "#f8f9fa", borderRadius: "8px", margin: "1rem 0" }}>
+            <p style={{ margin: "0 0 1rem 0", color: "#666" }}>
+              🐙 Sign up with your GitHub account for instant access!
+            </p>
+            <button
+              type="button"
+              onClick={handleGitHubAuth}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "#24292e",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                fontSize: "16px",
+                fontWeight: "600",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                margin: "0 auto"
+              }}
+            >
+              <span>🐙</span> Continue with GitHub
+            </button>
+          </div>
+        ) : null}
 
-        <label>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          required
-        />
+          {isSignUp && verificationMethod !== "github" && (
+            <>
+              <label>Username</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="your_username"
+                  required
+                  minLength="3"
+                  pattern="[a-zA-Z0-9_-]+"
+                  title="Username can only contain letters, numbers, underscores, and hyphens"
+                  style={{
+                    borderColor: 
+                      usernameStatus === "available" ? "#4CAF50" :
+                      usernameStatus === "taken" || usernameStatus === "invalid" ? "#f44336" :
+                      "#ccc"
+                  }}
+                />
+                {username && (
+                  <div style={{ 
+                    fontSize: "0.85rem", 
+                    marginTop: "-0.5rem", 
+                    marginBottom: "0.5rem",
+                    color: 
+                      usernameStatus === "available" ? "#4CAF50" :
+                      usernameStatus === "taken" || usernameStatus === "invalid" ? "#f44336" :
+                      "#666"
+                  }}>
+                    {usernameStatus === "checking" && "⏳ Checking availability..."}
+                    {usernameStatus === "available" && "✅ Username available"}
+                    {usernameStatus === "taken" && "❌ Username already taken"}
+                    {usernameStatus === "invalid" && "❌ Invalid username format"}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
-        {!isSignUp && (
-        <div className="auth-options">
-  <label className="remember-me">
-    <input
-      type="checkbox"
-      checked={rememberMe}
-      onChange={(e) => setRememberMe(e.target.checked)}
-    />
-    <span>Remember Me</span>
-  </label>
-</div>
-        )}
+          {verificationMethod !== "github" && (
+            <>
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </>
+          )}
 
-        <button type="submit" disabled={isSignUp && signUpDisabled}>
-          {isSignUp ? "Sign Up" : "Log In"}
-        </button>
-      </form>
+          {!isSignUp && (
+            <div className="auth-options">
+              <label className="remember-me">
+                <span>Remember Me</span>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+              </label>
+            </div>
+          )}
+
+          {verificationMethod !== "github" && (
+            <button type="submit" disabled={isSignUp && signUpDisabled}>
+              {isSignUp ? "Sign Up" : "Log In"}
+            </button>
+          )}
+        </form>
 
       <p style={{ marginTop: "1rem" }}>
         {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
@@ -240,19 +335,60 @@ function AuthForm({ onAuthSuccess }) {
           className="toggle-auth"
           onClick={() => {
             setIsSignUp(!isSignUp);
-            setError("")
+            setError("");
             setMessage("");
             setUsername("");
             setUsernameStatus("");
             setSignUpDisabled(false);
+            setVerificationMethod("email");
+            setEmail("");
           }}
         >
           {isSignUp ? "Log In" : "Sign Up"}
         </button>
-         <button type="button" className="forgot-btn" onClick={handleForgotPassword}>
-              Forgot Password?
-            </button>
+        {verificationMethod !== "github" && (
+          <button type="button" className="forgot-btn" onClick={handleForgotPassword}>
+            Forgot Password?
+          </button>
+        )}
       </p>
+      
+      {/* GitHub authentication option for login only */}
+      {!isSignUp && (
+        <div style={{ 
+          textAlign: "center", 
+          margin: "1.5rem 0", 
+          borderTop: "1px solid #e1e4e8", 
+          paddingTop: "1.5rem" 
+        }}>
+          <p style={{ margin: "0 0 1rem 0", color: "#666", fontSize: "0.9rem" }}>
+            Or continue with
+          </p>
+          <button
+            type="button"
+            onClick={handleGitHubAuth}
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#24292e",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "16px",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              margin: "0 auto",
+              transition: "background-color 0.2s"
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = "#1a1e22"}
+            onMouseOut={(e) => e.target.style.backgroundColor = "#24292e"}
+          >
+            <span>🐙</span> Sign in with GitHub
+          </button>
+        </div>
+      )}
     </div>
   );
 }

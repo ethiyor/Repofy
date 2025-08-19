@@ -7,6 +7,7 @@ import MyRepositories from "./MyRepositories";
 import UserProfile from "./UserProfile";
 import PublicProfile from "./PublicProfile";
 import ConfirmPage from "./ConfirmPage";
+import GitHubCallbackPage from "./GitHubCallbackPage";
 import { getUserProfile } from "./api";
 import "./App.css";
 import Navbar from "./Navbar";
@@ -26,6 +27,7 @@ function App() {
   const [showPublicProfile, setShowPublicProfile] = useState(false);
   const [showMyRepositories, setShowMyRepositories] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const toggleDarkMode = () => {
     const isDark = document.body.classList.toggle("dark");
@@ -309,7 +311,7 @@ function App() {
         />
 
         <header className="app-header">
-          <h1>Welcome to Repofy</h1>
+          <h1>{isSignUp && !session ? "Welcome to Repofy" : "Repofy"}</h1>
           <p className="tagline">Your personal mini GitHub – simplified and fast.</p>
         </header>
 
@@ -376,12 +378,17 @@ function App() {
                   <p className="cta-text">
                     Sign in to create, upload, and explore your repositories!
                   </p>
-                  <AuthForm onAuthSuccess={setSession} />
+                  <AuthForm 
+                    onAuthSuccess={setSession} 
+                    isSignUp={isSignUp}
+                    setIsSignUp={setIsSignUp}
+                  />
                 </>
               )
             }
           />
           <Route path="/confirm" element={<ConfirmPage />} />
+          <Route path="/auth/callback" element={<GitHubCallbackPage />} />
         </Routes>
 
         <footer className="footer">

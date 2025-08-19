@@ -816,7 +816,9 @@ a:hover {
 }
 
 .auth-form input[type="email"],
-.auth-form input[type="password"] {
+.auth-form input[type="password"],
+.auth-form input[type="tel"],
+.auth-form input[type="text"] {
   width: 100%;
   padding: 10px;
   margin-top: 0.3rem;
@@ -868,26 +870,23 @@ a:hover {
 }
 
 .remember-me {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-}
-
-
-.remember-me {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 0.95rem;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .remember-me input[type="checkbox"] {
   margin: 0;
-  transform: scale(1.1); /* Optional: make it slightly larger */
+  transform: scale(1.1);
+  order: 2;
 }
 
+.remember-me span {
+  order: 1;
+}
 
 .forgot-btn {
   background: none;
@@ -1220,12 +1219,15 @@ body.dark .comment-section textarea:focus {
   width: auto !important;
   padding: 0.5rem 1rem;
   margin: 0;
-  background-color: #6c757d;
+  background-color: transparent !important;
   font-size: 0.9rem;
 }
 
-.back-btn:hover {
-  background-color: #5a6268;
+.btn-secondary.back-btn:hover {
+  background-color: transparent !important;
+  color: #4a90e2 !important;
+  transform: translateX(-2px);
+  transition: all 0.2s ease;
 }
 
 .profile-header h2 {
@@ -1689,6 +1691,21 @@ body.dark .empty-profile p {
   color: #8b949e;
 }
 
+/* === VERIFICATION METHOD SELECTOR === */
+.verification-method-selector {
+  margin-bottom: 1rem;
+}
+
+.verification-method-selector label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.verification-method-selector input[type="radio"] {
+  margin-right: 0.5rem;
+  width: auto;
+}
+
 /* === MY REPOSITORIES PAGE === */
 .my-repositories-container {
   max-width: 1000px;
@@ -1715,12 +1732,15 @@ body.dark .empty-profile p {
   width: auto !important;
   padding: 0.5rem 1rem;
   margin: 0;
-  background-color: #6c757d;
+  background-color: transparent !important;
   font-size: 0.9rem;
 }
 
-.back-btn:hover {
-  background-color: #5a6268;
+.btn-secondary.back-btn:hover {
+  background-color: transparent !important;
+  color: #4a90e2 !important;
+  transform: translateX(-2px);
+  transition: all 0.2s ease;
 }
 
 .repositories-list {
