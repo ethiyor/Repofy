@@ -688,6 +688,144 @@ app.post("/admin/create-missing-profiles", async (req, res) => {
   }
 });
 
+// === COMMENT ENDPOINTS ===
+
+// Get comments for a repository
+app.get("/repos/:id/comments", checkAuth, async (req, res) => {
+  const { id } = req.params;
+
+  console.log("GET /repos/:id/comments called with id:", id);
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("comments")
+      .select(`
+        *,
+        user_profiles (
+          username,
+          display_name,
+          avatar_url
+        )
+      `)
+      .eq("repo_id", parseInt(id)) // Convert to integer since repo_id is BIGINT
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching comments:", error);
+      throw error;
+    }
+
+    console.log("Comments fetched successfully:", data?.length || 0, "comments found");
+
+    // Format comments with user information
+    const formattedComments = data.map(comment => ({
+      id: comment.id,
+      content: comment.content,
+      created_at: comment.created_at,
+      user_id: comment.user_id,
+      username: comment.user_profiles?.username || 'unknown',
+      display_name: comment.user_profiles?.display_name || comment.user_profiles?.username || 'Unknown User',
+      avatar_url: comment.user_profiles?.avatar_url
+    }));
+
+    res.json(formattedComments);
+  } catch (err) {
+    console.error("Error fetching comments:", err);
+    res.status(500).json({ error: "Failed to fetch comments", details: err.message });
+  }
+});
+
+// Add a comment to a repository
+app.post("/repos/:id/comments", checkAuth, async (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+
+  console.log("POST /repos/:id/comments called with:", { id, content, userId: req.user.id });
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: "Comment content is required" });
+  }
+
+  try {
+    // First verify the repository exists
+    const { data: repo, error: repoError } = await supabaseAdmin
+      .from("repos")
+      .select("id")
+      .eq("id", id)
+      .single();
+
+    if (repoError || !repo) {
+      console.error("Repository not found:", repoError);
+      return res.status(404).json({ error: "Repository not found" });
+    }
+
+    console.log("Repository found, inserting comment...");
+
+    const { data, error } = await supabaseAdmin
+      .from("comments")
+      .insert([{
+        repo_id: parseInt(id), // Convert to integer since repo_id is BIGINT
+        user_id: req.user.id,
+        content: content.trim()
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error inserting comment:", error);
+      throw error;
+    }
+
+    console.log("Comment inserted successfully:", data);
+    res.json({ message: "Comment added successfully", comment: data });
+  } catch (err) {
+    console.error("Error adding comment:", err);
+    res.status(500).json({ error: "Failed to add comment", details: err.message });
+  }
+});
+
+// Delete a comment
+app.delete("/repos/:repoId/comments/:commentId", checkAuth, async (req, res) => {
+  const { commentId } = req.params;
+
+  console.log("DELETE /repos/:repoId/comments/:commentId called with:", { commentId, userId: req.user.id });
+
+  try {
+    // First check if the comment belongs to the user
+    const { data: comment, error: fetchError } = await supabaseAdmin
+      .from("comments")
+      .select("user_id")
+      .eq("id", commentId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching comment for deletion:", fetchError);
+      throw fetchError;
+    }
+
+    if (comment.user_id !== req.user.id) {
+      console.log("User not authorized to delete comment");
+      return res.status(403).json({ error: "You can only delete your own comments" });
+    }
+
+    const { error } = await supabaseAdmin
+      .from("comments")
+      .delete()
+      .eq("id", commentId);
+
+    if (error) {
+      console.error("Error deleting comment:", error);
+      throw error;
+    }
+
+    console.log("Comment deleted successfully");
+    res.json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting comment:", err);
+    res.status(500).json({ error: "Failed to delete comment", details: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });

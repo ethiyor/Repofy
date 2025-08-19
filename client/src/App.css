@@ -422,10 +422,10 @@ button:hover {
 /* === REPOSITORIES === */
 .repo-card {
   background-color: #ffffff;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   border: 1px solid #ddd;
   transition: all 0.3s ease;
   width: 100%;
@@ -434,7 +434,7 @@ button:hover {
 }
 
 .repo-card.collapsed {
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 1rem;
 }
 
 .repo-card.collapsed:hover {
@@ -709,15 +709,24 @@ button:hover {
   display: inline-block;
 }
 
+.repo-actions {
+  margin: 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .repo-actions button {
-  margin-right: 0.5rem;
-  padding: 6px 12px;
-  border-radius: 5px;
+  margin-right: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
   background: #4a90e2;
   color: #fff;
   border: none;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .repo-actions button:hover {
@@ -2201,4 +2210,958 @@ body.dark .header-content h2 {
 
 body.dark .header-content p {
   color: #8b949e;
+}
+
+/* === REPOSITORY DETAIL PAGE === */
+.repository-detail-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.repo-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.repo-title-info h1 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.repo-description-large {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.repo-meta-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.repo-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.author-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.author-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.author-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.author-username {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.repo-stats-detail {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.repo-stats-detail .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.repo-tags-section {
+  margin-bottom: 1.5rem;
+}
+
+.repo-tags-section h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+}
+
+.repo-detail-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.btn-action-small {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #4a90e2;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.btn-action-small:hover {
+  background-color: #357abd;
+}
+
+.files-detail-section {
+  margin-bottom: 2rem;
+}
+
+.files-detail-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+}
+
+.files-list-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.file-block-detail {
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.file-block-detail .file-header {
+  background: #f6f8fa;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e1e4e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.code-block-detail {
+  margin: 0;
+  padding: 1rem;
+  background: #fff;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.comments-detail-section {
+  border-top: 1px solid #e1e4e8;
+  padding-top: 2rem;
+}
+
+.comments-detail-section h3 {
+  margin: 0 0 1rem 0;
+}
+
+.no-comments {
+  font-style: italic;
+  color: #666;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Dark mode styles for repository detail */
+body.dark .repository-detail-container {
+  color: #f0f6fc;
+}
+
+body.dark .repo-description-large {
+  color: #8b949e;
+}
+
+body.dark .repo-meta-section {
+  background: #21262d;
+  border-color: #30363d;
+}
+
+body.dark .author-name {
+  color: #f0f6fc;
+}
+
+body.dark .author-username {
+  color: #8b949e;
+}
+
+body.dark .repo-stats-detail .stat-item {
+  color: #8b949e;
+}
+
+body.dark .file-block-detail {
+  border-color: #30363d;
+}
+
+body.dark .file-block-detail .file-header {
+  background: #21262d;
+  border-color: #30363d;
+}
+
+body.dark .code-block-detail {
+  background: #0d1117;
+  color: #f0f6fc;
+}
+
+body.dark .comments-detail-section {
+  border-color: #30363d;
+}
+
+body.dark .no-comments {
+  color: #8b949e;
+}
+
+body.dark .btn-action-small {
+  background-color: #4a90e2;
+}
+
+body.dark .btn-action-small:hover {
+  background-color: #357abd;
+}
+
+/* === CLICKABLE REPOSITORY CARDS === */
+.clickable-repo-card {
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.clickable-repo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-color: #4a90e2;
+}
+
+.click-hint {
+  font-size: 0.85rem;
+  color: #4a90e2;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+body.dark .clickable-repo-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border-color: #4a90e2;
+}
+
+body.dark .click-hint {
+  color: #58a6ff;
+}
+
+/* === VIEW ARROW BUTTON === */
+.view-arrow-btn {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.view-arrow-btn:hover {
+  background-color: #357abd;
+}
+
+body.dark .view-arrow-btn {
+  background-color: #4a90e2;
+}
+
+body.dark .view-arrow-btn:hover {
+  background-color: #357abd;
+}
+
+/* === SIMPLE VIEW PROFILE BUTTON === */
+.view-profile-text-btn {
+  background: none;
+  border: none;
+  color: #4a90e2;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: underline;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.view-profile-text-btn:hover {
+  color: #357abd;
+}
+
+body.dark .view-profile-text-btn {
+  color: #58a6ff;
+}
+
+body.dark .view-profile-text-btn:hover {
+  color: #4a90e2;
+}
+
+/* === REPOSITORY DETAIL PAGE === */
+.repository-detail-container {
+  min-height: 100vh;
+  padding: 20px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.repository-detail-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.back-button {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: #5b6270;
+}
+
+/* User Profile Section - Now shown first */
+.repository-detail-user-section {
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.repository-detail-user-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.repository-detail-user-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.repository-detail-user-info h3 {
+  margin: 0 0 5px 0;
+  color: var(--text-color);
+  font-size: 1.3rem;
+}
+
+.repository-detail-user-info p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.repository-detail-user-bio {
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+/* Repository Info Section */
+.repository-detail-repo-section {
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.repository-detail-repo-header {
+  margin-bottom: 15px;
+}
+
+.repository-detail-repo-title {
+  font-size: 1.8rem;
+  color: var(--text-color);
+  margin: 0 0 8px 0;
+}
+
+.repository-detail-repo-description {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Repository Header with Right Edge Stats */
+.repo-header-with-right-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  position: relative;
+}
+
+.repo-title-info {
+  flex: 1;
+}
+
+.repo-title-info h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.8rem;
+  color: var(--text-color);
+}
+
+.repo-stats-right-edge {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-end;
+  margin-top: 32px;
+  min-width: 150px;
+}
+
+.repo-stats-right-edge .stat-item {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.repo-description-large {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Repository Header with Inline Stats */
+.repo-header-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.repo-title-with-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.repo-title-with-stats h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--text-color);
+}
+
+.repo-stats-inline {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.repo-stats-inline .stat-item {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.repo-description-large {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Repository Header with Stats on Right */
+.repo-header-with-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.repo-title-info {
+  flex: 1;
+}
+
+.repo-stats-detail-right {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  min-width: 150px;
+  text-align: right;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.repo-stats-detail-right .stat-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Files Header with Actions */
+.files-header-with-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.files-header-with-actions h3 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.2rem;
+}
+
+/* Action Buttons - Smaller size as requested */
+.repository-detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.repository-detail-action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.repository-detail-action-btn.star {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.repository-detail-action-btn.star:hover {
+  background-color: #d97706;
+}
+
+.repository-detail-action-btn.download {
+  background-color: #10b981;
+  color: white;
+}
+
+.repository-detail-action-btn.download:hover {
+  background-color: #059669;
+}
+
+.repository-detail-action-btn.comments {
+  background-color: #6366f1;
+  color: white;
+}
+
+.repository-detail-action-btn.comments:hover {
+  background-color: #4f46e5;
+}
+
+/* File Content Section */
+.repository-detail-files {
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.repository-detail-files h3 {
+  margin: 0 0 15px 0;
+  color: var(--text-color);
+  font-size: 1.2rem;
+}
+
+.file-content {
+  background: var(--code-background);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  overflow-x: auto;
+}
+
+.file-header {
+  font-weight: bold;
+  color: var(--text-color);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.file-code {
+  font-family: 'Courier New', monospace;
+  white-space: pre-wrap;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+/* === COMMENTS SYSTEM === */
+.comments-detail-section {
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 25px;
+}
+
+.comments-detail-section h3 {
+  margin: 0 0 20px 0;
+  color: var(--text-color);
+  font-size: 1.2rem;
+}
+
+.comment-input-section {
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.comment-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  resize: vertical;
+  background: var(--background-color);
+  color: var(--text-color);
+  margin-bottom: 10px;
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+.comment-input-section button {
+  width: auto;
+  margin: 0;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comment-item {
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-color);
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.delete-comment-btn {
+  background: none !important;
+  border: none !important;
+  padding: 4px !important;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #dc3545;
+  margin-left: auto !important;
+  width: auto !important;
+  height: auto !important;
+  transition: opacity 0.2s ease;
+  opacity: 0.7;
+}
+
+.delete-comment-btn:hover {
+  opacity: 1;
+  background: none !important;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.comment-username {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.comment-date {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.comment-content {
+  color: var(--text-color);
+  line-height: 1.5;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+.no-comments {
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 20px;
+}
+
+/* Dark mode support for comments */
+body.dark .comment-input {
+  background: #21262d;
+  border-color: #30363d;
+  color: #f0f6fc;
+}
+
+body.dark .comment-item {
+  background: #161b22;
+  border-color: #30363d;
+}
+
+body.dark .comment-avatar {
+  border-color: #30363d;
+}
+
+/* File Action Buttons */
+.file-action-buttons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.file-bottom-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px 0 5px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 10px;
+}
+
+.file-action-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  min-width: auto;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.file-action-btn:hover {
+  background-color: var(--hover-background);
+  color: var(--text-color);
+}
+
+.file-action-btn.star-btn:hover {
+  background-color: #f59e0b;
+  color: white;
+  border-color: #f59e0b;
+}
+
+.file-action-btn.comment-btn:hover {
+  background-color: #6366f1;
+  color: white;
+  border-color: #6366f1;
+}
+
+.file-action-btn.download-btn:hover {
+  background-color: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+/* File Content and Expansion Controls */
+.file-content-section {
+  position: relative;
+}
+
+.file-expansion-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.see-more-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #4a90e2;
+  transition: color 0.2s ease;
+  font-weight: 500;
+  width: auto !important;
+  display: inline-block !important;
+}
+
+.see-more-btn:hover {
+  color: #357abd;
+  background: transparent !important;
+}
+
+/* Update file actions layout */
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-size {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Responsive Design for Repository Detail */
+@media (max-width: 768px) {
+  .repo-header-with-right-stats {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .repo-stats-right-edge {
+    align-items: flex-start;
+    margin-top: 0;
+    min-width: auto;
+  }
+  
+  .repo-header-with-stats {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .repo-title-with-stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .repo-stats-inline {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .repo-stats-inline .stat-item {
+    font-size: 0.8rem;
+  }
+  
+  .repo-stats-detail-right {
+    justify-content: flex-start;
+    text-align: left;
+    min-width: auto;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .repo-stats-detail-right .stat-item {
+    justify-content: flex-start;
+  }
+  
+  .files-header-with-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .repo-detail-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .file-action-buttons {
+    gap: 3px;
+  }
+  
+  .file-bottom-actions {
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .file-action-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+  
+  .see-more-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Comments responsive */
+  .comment-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .comment-input {
+    font-size: 0.85rem;
+  }
+  
+  .delete-comment-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
 }

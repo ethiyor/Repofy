@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AuthForm from "./AuthForm";
 import RepoList from "./RepoList";
 import MyRepositories from "./MyRepositories";
+import RepositoryDetail from "./RepositoryDetail";
 import UserProfile from "./UserProfile";
 import PublicProfile from "./PublicProfile";
 import ConfirmPage from "./ConfirmPage";
@@ -26,6 +27,8 @@ function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [showPublicProfile, setShowPublicProfile] = useState(false);
   const [showMyRepositories, setShowMyRepositories] = useState(false);
+  const [showRepositoryDetail, setShowRepositoryDetail] = useState(false);
+  const [selectedRepository, setSelectedRepository] = useState(null);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
   const [isSignUp, setIsSignUp] = useState(false);
 
@@ -185,6 +188,22 @@ function App() {
     setShowUploadForm(false);
     setShowProfile(false);
     setShowPublicProfile(false);
+    setShowRepositoryDetail(false);
+    setSelectedRepository(null);
+  };
+
+  const handleShowRepositoryDetail = (repository) => {
+    setSelectedRepository(repository);
+    setShowRepositoryDetail(true);
+    setShowMyRepositories(false);
+    setShowUploadForm(false);
+    setShowProfile(false);
+    setShowPublicProfile(false);
+  };
+
+  const handleBackFromRepositoryDetail = () => {
+    setShowRepositoryDetail(false);
+    setSelectedRepository(null);
   };
 
   const handleLogout = async () => {
@@ -249,6 +268,14 @@ function App() {
                     onBack={handleBackToCommunity}
                     uploadRepo={uploadRepo}
                   />
+                ) : showRepositoryDetail ? (
+                  <RepositoryDetail
+                    session={session}
+                    repo={selectedRepository}
+                    onBack={handleBackFromRepositoryDetail}
+                    onStar={starRepo}
+                    onDownload={downloadFile}
+                  />
                 ) : (
                   <Dashboard
                     session={session}
@@ -275,6 +302,7 @@ function App() {
                     onShowProfile={() => setShowProfile(true)}
                     onShowUserProfile={showUserProfile}
                     onShowMyRepositories={handleShowMyRepositories}
+                    onShowRepositoryDetail={handleShowRepositoryDetail}
                   />
                 )
               ) : (
@@ -335,6 +363,7 @@ function Dashboard({
   onShowProfile,
   onShowUserProfile,
   onShowMyRepositories,
+  onShowRepositoryDetail,
 }) {
   const hour = new Date().getHours();
   const greeting =
@@ -393,6 +422,13 @@ function Dashboard({
           title="Create a new repository"
         >
           ➕ {showUploadForm ? "Cancel Upload" : "Upload New Repository"}
+        </button>
+        <button 
+          onClick={onShowProfile} 
+          className="btn-secondary action-btn"
+          title="Edit your profile information"
+        >
+          👤 Edit Profile
         </button>
       </div>
 
@@ -493,6 +529,7 @@ function Dashboard({
           onShowProfile={onShowProfile}
           onShowUserProfile={onShowUserProfile}
           onShowMyRepositories={onShowMyRepositories}
+          onShowRepositoryDetail={onShowRepositoryDetail}
         />
       </div>
 
