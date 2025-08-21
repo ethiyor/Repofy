@@ -230,7 +230,19 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
 
   const toggleUploadForm = () => {
     setShowUploadForm(!showUploadForm);
+    // Close analytics when opening upload form
+    if (!showUploadForm) {
+      setShowAnalytics(false);
+    }
     setMessage("");
+  };
+
+  const toggleAnalytics = () => {
+    setShowAnalytics(!showAnalytics);
+    // Close upload form when opening analytics
+    if (!showAnalytics) {
+      setShowUploadForm(false);
+    }
   };
 
   return (
@@ -243,7 +255,7 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
         
         <div className="header-actions">
           <button 
-            onClick={() => setShowAnalytics(!showAnalytics)} 
+            onClick={toggleAnalytics} 
             className={`btn-secondary analytics-btn ${showAnalytics ? 'active' : ''}`}
           >
             📊 {showAnalytics ? 'Hide' : 'Show'} Analytics
@@ -418,27 +430,25 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
                 </div>
                 
                 <div className="repo-actions">
-                  <div className="repo-stats">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onStar(repo.id);
-                      }}
-                      className="stat-button"
-                    >
-                      ⭐ {repo.stars || 0}
-                    </button>
-                    
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDownload(repo.id);
-                      }}
-                      className="stat-button"
-                    >
-                      📥 {repo.downloads || 0}
-                    </button>
-                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStar(repo.id);
+                    }}
+                    className="stat-button"
+                  >
+                    ⭐ {repo.stars || 0}
+                  </button>
+                  
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownload(repo.id);
+                    }}
+                    className="stat-button"
+                  >
+                    📥 {repo.downloads || 0}
+                  </button>
                   
                   <button 
                     onClick={(e) => {

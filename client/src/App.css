@@ -265,41 +265,181 @@ button:hover {
 }
 
 .analytics-btn {
-  background: var(--bg-secondary, #f9fafb);
-  border: 1px solid var(--border-color, #d1d5db);
-  color: var(--text-color, #374151);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-color, #374151) !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
   cursor: pointer;
   transition: all 0.2s ease;
   width: auto;
   margin: 0;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: underline;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .analytics-btn:hover {
-  background: var(--bg-hover, #f3f4f6);
+  background: transparent !important;
+  border: none !important;
+  color: var(--primary-color, #3b82f6) !important;
+  text-decoration: underline;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .analytics-btn.active {
-  background: var(--primary-color, #3b82f6);
-  color: white;
-  border-color: var(--primary-color, #3b82f6);
+  background: transparent !important;
+  border: none !important;
+  color: var(--primary-color, #3b82f6) !important;
+  text-decoration: underline;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .upload-btn {
-  background: var(--primary-color, #3b82f6);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  background: transparent !important;
+  color: var(--text-color, #374151) !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
   cursor: pointer;
   transition: all 0.2s ease;
   width: auto;
   margin: 0;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: underline;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .upload-btn:hover {
-  background: var(--primary-dark, #2563eb);
+  background: transparent !important;
+  border: none !important;
+  color: var(--primary-color, #3b82f6) !important;
+  text-decoration: underline;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.analytics-btn:focus,
+.analytics-btn:active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.upload-btn:focus,
+.upload-btn:active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* === HAMBURGER MENU === */
+.hamburger-menu:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.dropdown-menu {
+  animation: slideInFromLeft 0.25s ease-out;
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.menu-item {
+  color: #333;
+  border-bottom-color: #eee;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.menu-item:hover {
+  background-color: #f8f9fa !important;
+  color: #333 !important;
+}
+
+/* Special styling for logout button */
+.menu-item[style*="color: rgb(220, 53, 69)"]:hover,
+.menu-item[style*="color:#dc3545"]:hover {
+  background-color: #dc3545 !important;
+  color: #fff !important;
+}
+
+.menu-item:first-child {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.menu-item:last-child {
+  border-bottom: none !important;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+/* Dark mode styles for hamburger menu */
+body.dark .hamburger-menu {
+  color: #fff !important;
+}
+
+body.dark .hamburger-menu:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark .dropdown-menu {
+  background-color: #2c2c2c !important;
+  border-color: #555 !important;
+}
+
+body.dark .menu-item {
+  color: #fff !important;
+  border-bottom-color: #555 !important;
+}
+
+body.dark .menu-item:hover {
+  background-color: #404040 !important;
+  color: #fff !important;
+}
+
+/* Dark mode logout button hover */
+body.dark .menu-item[style*="color: rgb(220, 53, 69)"]:hover,
+body.dark .menu-item[style*="color:#dc3545"]:hover {
+  background-color: #dc3545 !important;
+  color: #fff !important;
+}
+
+/* Close button hover effect */
+.dropdown-menu button:hover {
+  background-color: #f5f5f5 !important;
+}
+
+body.dark .dropdown-menu button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .message {
@@ -710,23 +850,50 @@ button:hover {
 }
 
 .repo-actions {
-  margin: 0.75rem 0;
+  margin: 0.2rem 0;
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 6px;
 }
 
 .repo-actions button {
-  margin-right: 0;
-  padding: 4px 8px;
-  border-radius: 4px;
+  margin: 0;
+  padding: 3px 8px !important;
+  border-radius: 3px !important;
   background: #4a90e2;
-  color: #fff;
-  border: none;
+  color: #fff !important;
+  border: none !important;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  flex: 1;
+  text-align: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1.2 !important;
+  white-space: nowrap;
+  height: 24px !important;
+  min-height: 24px !important;
+  box-sizing: border-box !important;
+}
+
+.stat-button {
+  background: #28a745 !important;
+}
+
+.stat-button:hover {
+  background: #218838 !important;
+}
+
+.repo-actions .btn-danger {
+  background-color: #da3633 !important;
+}
+
+.repo-actions .btn-danger:hover {
+  background-color: #b93330 !important;
 }
 
 .repo-actions button:hover {
@@ -1305,6 +1472,14 @@ body.dark .repo-actions button {
 
 body.dark .repo-actions button:hover {
   background-color: #357abd;
+}
+
+body.dark .stat-button {
+  background-color: #28a745 !important;
+}
+
+body.dark .stat-button:hover {
+  background-color: #218838 !important;
 }
 
 /* === DARK MODE - GITHUB-STYLE BUTTONS === */

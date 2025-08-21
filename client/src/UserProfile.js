@@ -270,12 +270,25 @@ function UserProfile({ session, userProfile, setUserProfile, onBack }) {
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 cursor: 'pointer',
-                position: 'relative'
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >
-              {!userProfile?.avatar_url && getInitials(displayName)}
-              {!uploading && !userProfile?.avatar_url && (
-                <div className="camera-hint">📷</div>
+              {!userProfile?.avatar_url && !uploading && (
+                <div style={{
+                  fontSize: '2.5rem',
+                  color: '#007bff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  height: '100%',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}>📷</div>
               )}
               {uploading && (
                 <div className="upload-overlay">

@@ -231,6 +231,9 @@ function App() {
           userProfile={userProfile}
           session={session}
           onShowProfile={() => setShowProfile(true)}
+          onLogout={handleLogout}
+          onShowMyRepositories={() => setShowMyRepositories(true)}
+          onShowUploadForm={() => setShowUploadForm(true)}
         />
 
         <header className="app-header">
@@ -407,31 +410,6 @@ function Dashboard({
         )}
       </div>
 
-      {/* Main Action Buttons */}
-      <div className="dashboard-actions">
-        <button 
-          onClick={onShowMyRepositories} 
-          className="btn-primary action-btn"
-          title="View and manage your repositories"
-        >
-          📚 My Repositories
-        </button>
-        <button 
-          onClick={toggleUploadForm} 
-          className="btn-secondary action-btn"
-          title="Create a new repository"
-        >
-          ➕ {showUploadForm ? "Cancel Upload" : "Upload New Repository"}
-        </button>
-        <button 
-          onClick={onShowProfile} 
-          className="btn-secondary action-btn"
-          title="Edit your profile information"
-        >
-          👤 Edit Profile
-        </button>
-      </div>
-
       {/* Upload Form */}
       {showUploadForm && (
         <div className="upload-section">
@@ -531,12 +509,6 @@ function Dashboard({
           onShowMyRepositories={onShowMyRepositories}
           onShowRepositoryDetail={onShowRepositoryDetail}
         />
-      </div>
-
-      <div className="main-actions">
-        <button onClick={logout} className="btn-primary" title="Log Out">
-          Log Out
-        </button>
       </div>
     </div>
   );
