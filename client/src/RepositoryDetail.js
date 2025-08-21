@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 // Use environment-based URLs
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://repofy-backend.onrender.com' 
-  : 'http://localhost:4000';
+const API_BASE_URL = 'https://repofy-backend.onrender.com';
 
 function RepositoryDetail({ session, repo, onBack, onStar, onDownload }) {
   // Ref for the top of the detail view (Back to Community button)

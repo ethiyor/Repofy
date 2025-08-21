@@ -3,9 +3,7 @@ import AdvancedSearch from "./components/AdvancedSearch";
 import "./App.css";
 
 // Use environment-based URLs
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://repofy-backend.onrender.com' 
-  : 'http://localhost:4000';
+const API_BASE_URL = 'https://repofy-backend.onrender.com';
 
 function RepoList({ session, userProfile, repos, setRepos, onStar, onDownload, onShowProfile, onShowUserProfile, onShowMyRepositories, onShowRepositoryDetail }) {
   const [filteredRepos, setFilteredRepos] = useState(repos);
