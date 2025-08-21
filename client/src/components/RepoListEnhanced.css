@@ -75,8 +75,8 @@
 }
 
 .results-summary {
-  margin-bottom: 2rem;
-  padding: 1rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
   background: var(--bg-secondary, #f9fafb);
   border-radius: 8px;
   border: 1px solid var(--border-color, #e5e7eb);
@@ -106,14 +106,14 @@
 .repo-sections {
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  gap: 1.25rem;
 }
 
 .user-section {
   background: var(--bg-color, #ffffff);
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 12px;
-  padding: 2rem;
+  padding: 1.25rem 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 

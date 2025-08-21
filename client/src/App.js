@@ -401,7 +401,7 @@ function Dashboard({
           <div>
             <h2>{greeting}, {getDisplayName()}!</h2>
             <p>
-              Easily upload and manage your code repositories. Click the buttons below to get started.
+              Easily upload and manage your code repositories. Click the menu at the top left corner to get started.
             </p>
           </div>
         </div>

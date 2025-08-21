@@ -61,7 +61,6 @@ function RepoList({ session, userProfile, repos, setRepos, onStar, onDownload, o
   const RepoCard = ({ repo, isCurrentUser = false }) => {
     const handleViewClick = (e) => {
       e.stopPropagation();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
       onShowRepositoryDetail(repo);
     };
 

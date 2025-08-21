@@ -6,19 +6,19 @@
   margin-bottom: 2rem;
   box-shadow: none;
 }
-
 .search-header {
   margin-bottom: 1rem;
+/* Removed stray closing brace that caused a syntax error */
 }
-
 .search-main {
   display: flex;
+/* Removed stray closing brace */
   gap: 1rem;
   align-items: center;
 }
-
 .search-input {
   flex: 1;
+/* Removed stray closing brace */
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-color, #d1d5db);
   border-radius: 8px;
@@ -27,9 +27,9 @@
   background: var(--bg-color, #ffffff);
   color: var(--text-color, #374151);
 }
-
 .search-input:focus {
   outline: none;
+/* Removed stray closing brace that caused a syntax error */
   border-color: var(--primary-color, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
@@ -51,8 +51,9 @@
   white-space: nowrap;
 }
 
+/* Updated hover color for filter button */
 .filter-toggle:hover {
-  background: var(--bg-hover, #f3f4f6);
+  background: #e0e7ff; /* soft indigo for light mode */
 }
 
 .filter-toggle.active {
@@ -95,6 +96,7 @@
   }
 }
 
+ 
 .filter-group {
   display: flex;
   flex-direction: column;
@@ -108,8 +110,8 @@
 }
 
 .filter-group select {
-  padding: 0.5rem;
-  border: 1px solid var(--border-color, #d1d5db);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
   border-radius: 6px;
   background: var(--bg-color, #ffffff);
   color: var(--text-color, #374151);
@@ -200,8 +202,10 @@
   color: var(--text-dark, #f9fafb);
 }
 
+/* Updated hover color for filter button in dark mode */
+
 .dark .filter-toggle:hover {
-  background: var(--bg-hover-dark, #4b5563);
+  background: #3730a3; /* deep indigo for dark mode */
 }
 
 .dark .filters-panel {

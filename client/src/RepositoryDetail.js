@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 // Use environment-based URLs
@@ -7,6 +7,14 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
   : 'http://localhost:4000';
 
 function RepositoryDetail({ session, repo, onBack, onStar, onDownload }) {
+  // Ref for the top of the detail view (Back to Community button)
+  const topRef = useRef(null);
+  // Scroll to the topRef when repo changes (i.e., when detail is opened)
+  useEffect(() => {
+    if (repo && topRef.current) {
+      topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [repo]);
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState([]);
   const [commentTexts, setCommentTexts] = useState("");
@@ -190,7 +198,7 @@ function RepositoryDetail({ session, repo, onBack, onStar, onDownload }) {
   }
 
   return (
-    <div className="repository-detail-container">
+    <div className="repository-detail-container" ref={topRef}>
       {/* Header with Back Button */}
       <div className="repo-detail-header">
         <button onClick={onBack} className="btn-secondary back-btn">
