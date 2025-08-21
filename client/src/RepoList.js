@@ -64,6 +64,12 @@ function RepoList({ session, userProfile, repos, setRepos, onStar, onDownload, o
       onShowRepositoryDetail(repo);
     };
 
+    // Truncate description to 80 chars with ellipsis
+    const getTruncatedDescription = (desc, maxLen = 50) => {
+      if (!desc) return '';
+      return desc.length > maxLen ? desc.slice(0, maxLen) + '...' : desc;
+    };
+
     return (
       <div className="repo-card">
         <div className="repo-header">
@@ -76,7 +82,7 @@ function RepoList({ session, userProfile, repos, setRepos, onStar, onDownload, o
                 <span className="visibility-badge private">Private</span>
               )}
             </h3>
-            <p className="repo-description">{repo.description}</p>
+            <p className="repo-description">{getTruncatedDescription(repo.description)}</p>
           </div>
           <div className="repo-meta">
             <span className="repo-date" title={formatDate(repo.created_at)}>
