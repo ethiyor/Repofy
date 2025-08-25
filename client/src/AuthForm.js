@@ -26,16 +26,63 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
       setError("");
       setMessage("Redirecting to GitHub...");
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      const redirectUrl = `${FRONTEND_URL}/auth/callback`;
+      console.log('Initiating GitHub OAuth with redirect:', redirectUrl);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${FRONTEND_URL}/auth/callback`
+          redirectTo: redirectUrl,
+          scopes: 'user:email'
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('GitHub OAuth error:', error);
+        throw error;
+      }
+      
+      console.log('GitHub OAuth initiated successfully:', data);
     } catch (err) {
-      setError(err.message);
+      console.error('GitHub auth error:', err);
+      setError(`GitHub authentication failed: ${err.message || 'Unknown error'}`);
+      setMessage("");
+    }
+  };
+
+  // Handle Google authentication
+  const handleGoogleAuth = async () => {
+    try {
+      setError("");
+      setMessage("Redirecting to Google...");
+      
+      const redirectUrl = `${FRONTEND_URL}/auth/callback`;
+      console.log('Initiating Google OAuth with redirect:', redirectUrl);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          scopes: 'email profile',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      
+      if (error) {
+        console.error('Google OAuth error:', error);
+        if (error.message.includes('Provider not found')) {
+          throw new Error('Google authentication is not configured. Please contact support.');
+        }
+        throw error;
+      }
+      
+      console.log('Google OAuth initiated successfully:', data);
+    } catch (err) {
+      console.error('Google auth error:', err);
+      setError(`Google authentication failed: ${err.message || 'Unknown error'}`);
       setMessage("");
     }
   };
@@ -228,30 +275,54 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
             />
           </>
         ) : verificationMethod === "github" ? (
-          <div style={{ textAlign: "center", padding: "1rem", backgroundColor: "#f8f9fa", borderRadius: "8px", margin: "1rem 0" }}>
-            <p style={{ margin: "0 0 1rem 0", color: "#666" }}>
-              🐙 Sign up with your GitHub account for instant access!
+          <div style={{ textAlign: "right", padding: "1rem 0", margin: "1rem 0" }}>
+            <p style={{ margin: "0 0 1rem 0", color: "#666", textAlign: "center" }}>
+              🐙 Sign up with your GitHub account or Google for instant access!
             </p>
-            <button
-              type="button"
-              onClick={handleGitHubAuth}
-              style={{
-                padding: "12px 24px",
-                backgroundColor: "#24292e",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "16px",
-                fontWeight: "600",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                margin: "0 auto"
-              }}
-            >
-              <span>🐙</span> Continue with GitHub
-            </button>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={handleGitHubAuth}
+                style={{
+                  padding: "12px 24px",
+                  backgroundColor: "transparent",
+                  color: "#24292e",
+                  border: "none",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  transition: "color 0.2s"
+                }}
+                onMouseOver={(e) => e.target.style.color = "#0366d6"}
+                onMouseOut={(e) => e.target.style.color = "#24292e"}
+              >
+                <span>🐙</span> Continue with GitHub
+              </button>
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                style={{
+                  padding: "12px 24px",
+                  backgroundColor: "transparent",
+                  color: "#4285f4",
+                  border: "none",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  transition: "color 0.2s"
+                }}
+                onMouseOver={(e) => e.target.style.color = "#1a73e8"}
+                onMouseOut={(e) => e.target.style.color = "#4285f4"}
+              >
+                <span>🔍</span> Continue with Google
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -353,40 +424,61 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
         )}
       </p>
       
-      {/* GitHub authentication option for login only */}
+      {/* OAuth authentication options for login only */}
       {!isSignUp && (
         <div style={{ 
-          textAlign: "center", 
+          textAlign: "right", 
           margin: "1.5rem 0", 
           borderTop: "1px solid #e1e4e8", 
           paddingTop: "1.5rem" 
         }}>
-          <p style={{ margin: "0 0 1rem 0", color: "#666", fontSize: "0.9rem" }}>
+          <p style={{ margin: "0 0 1rem 0", color: "#666", fontSize: "0.9rem", textAlign: "center" }}>
             Or continue with
           </p>
-          <button
-            type="button"
-            onClick={handleGitHubAuth}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#24292e",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              fontSize: "16px",
-              fontWeight: "600",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              margin: "0 auto",
-              transition: "background-color 0.2s"
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = "#1a1e22"}
-            onMouseOut={(e) => e.target.style.backgroundColor = "#24292e"}
-          >
-            <span>🐙</span> Sign in with GitHub
-          </button>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={handleGitHubAuth}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "transparent",
+                color: "#24292e",
+                border: "none",
+                fontSize: "16px",
+                fontWeight: "600",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "color 0.2s"
+              }}
+              onMouseOver={(e) => e.target.style.color = "#0366d6"}
+              onMouseOut={(e) => e.target.style.color = "#24292e"}
+            >
+             🐙 GitHub
+            </button>
+            <button
+              type="button"
+              onClick={handleGoogleAuth}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "transparent",
+                color: "#4285f4",
+                border: "none",
+                fontSize: "16px",
+                fontWeight: "600",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "color 0.2s"
+              }}
+              onMouseOver={(e) => e.target.style.color = "#1a73e8"}
+              onMouseOut={(e) => e.target.style.color = "#4285f4"}
+            >
+             🔍 Google
+            </button>
+          </div>
         </div>
       )}
     </div>

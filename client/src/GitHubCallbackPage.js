@@ -3,46 +3,80 @@ import { useNavigate } from "react-router-dom";
 import supabase from "./supabase";
 
 function GitHubCallbackPage() {
-  const [message, setMessage] = useState("Completing GitHub authentication...");
+  const [message, setMessage] = useState("Completing OAuth authentication...");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleGitHubCallback = async () => {
+    const handleOAuthCallback = async () => {
       try {
-        // Get the session from the URL hash
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Processing OAuth callback...', window.location);
+        
+        // Check if we have a hash or search params
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const searchParams = new URLSearchParams(window.location.search);
+        
+        console.log('Hash params:', Object.fromEntries(hashParams));
+        console.log('Search params:', Object.fromEntries(searchParams));
+        
+        // Check for error in URL
+        const error = hashParams.get('error') || searchParams.get('error');
+        const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
         
         if (error) {
-          console.error("GitHub auth error:", error);
-          setMessage("❌ Error during GitHub authentication. Please try again.");
+          console.error('OAuth error from URL:', error, errorDescription);
+          setMessage(`❌ Authentication failed: ${errorDescription || error}`);
+          setTimeout(() => navigate("/"), 5000);
+          return;
+        }
+        
+        // Try to get the current session
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+          setMessage("❌ Error retrieving session. Please try again.");
           setTimeout(() => navigate("/"), 3000);
           return;
         }
 
-        if (session) {
-          setMessage("✅ GitHub authentication successful! Redirecting...");
+        if (data?.session) {
+          console.log('OAuth session found:', data.session.user);
+          const provider = data.session.user.app_metadata?.provider || 'OAuth';
+          setMessage(`✅ ${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication successful! Redirecting...`);
           
-          // Trigger any additional setup needed for GitHub users
-          // The session will be handled by the main app
+          // Redirect back to main app
           setTimeout(() => {
             navigate("/");
-            // Refresh the page to ensure the session is properly loaded
             window.location.reload();
           }, 1500);
         } else {
-          setMessage("❌ No session found. Please try logging in again.");
-          setTimeout(() => navigate("/"), 3000);
+          console.log('No session found, checking for tokens...');
+          
+          // Check for access token in URL
+          const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+          
+          if (accessToken) {
+            console.log('Found access token in URL');
+            setMessage("✅ Authentication successful! Redirecting...");
+            setTimeout(() => {
+              navigate("/");
+              window.location.reload();
+            }, 1500);
+          } else {
+            console.log('No session or tokens found');
+            setMessage("❌ Authentication incomplete. Please try logging in again.");
+            setTimeout(() => navigate("/"), 3000);
+          }
         }
       } catch (err) {
         console.error("Unexpected error:", err);
-        setMessage("❌ Unexpected error occurred during authentication.");
+        setMessage(`❌ Unexpected error: ${err.message}`);
         setTimeout(() => navigate("/"), 3000);
       }
     };
 
-    // Small delay to ensure URL processing is complete
-    const timer = setTimeout(handleGitHubCallback, 100);
-    return () => clearTimeout(timer);
+    // Process callback immediately
+    handleOAuthCallback();
   }, [navigate]);
 
   return (
@@ -56,9 +90,9 @@ function GitHubCallbackPage() {
       boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
     }}>
       <div style={{ marginBottom: "1rem" }}>
-        <span style={{ fontSize: "2rem" }}>🐙</span>
+        <span style={{ fontSize: "2rem" }}>�</span>
       </div>
-      <h2 style={{ marginBottom: "1rem", color: "#24292e" }}>GitHub Authentication</h2>
+      <h2 style={{ marginBottom: "1rem", color: "#24292e" }}>OAuth Authentication</h2>
       <p style={{ color: "#666", fontSize: "1.1rem" }}>{message}</p>
       
       {message.includes("❌") && (
