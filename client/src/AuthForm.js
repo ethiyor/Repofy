@@ -12,7 +12,6 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [verificationMethod, setVerificationMethod] = useState("email"); // "email" or "github"
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -235,35 +234,7 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
 
       {/* Main auth form */}
       <form onSubmit={handleSubmit} className="auth-form">
-        {isSignUp && (
-          <div className="verification-method-selector">
-            <label>Verification Method</label>
-            <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <input
-                  type="radio"
-                  name="verificationMethod"
-                  value="email"
-                  checked={verificationMethod === "email"}
-                  onChange={(e) => setVerificationMethod(e.target.value)}
-                />
-                📧 Email
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <input
-                  type="radio"
-                  name="verificationMethod"
-                  value="github"
-                  checked={verificationMethod === "github"}
-                  onChange={(e) => setVerificationMethod(e.target.value)}
-                />
-                🐙 GitHub
-              </label>
-            </div>
-          </div>
-        )}
-
-        {verificationMethod === "email" ? (
+        {!isSignUp ? (
           <>
             <label>Email</label>
             <input
@@ -274,59 +245,20 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
               required
             />
           </>
-        ) : verificationMethod === "github" ? (
-          <div style={{ textAlign: "right", padding: "1rem 0", margin: "1rem 0" }}>
-            <p style={{ margin: "0 0 1rem 0", color: "#666", textAlign: "center" }}>
-              🐙 Sign up with your GitHub account or Google for instant access!
-            </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-              <button
-                type="button"
-                onClick={handleGitHubAuth}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "transparent",
-                  color: "#24292e",
-                  border: "none",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  transition: "color 0.2s"
-                }}
-                onMouseOver={(e) => e.target.style.color = "#0366d6"}
-                onMouseOut={(e) => e.target.style.color = "#24292e"}
-              >
-                <span>🐙</span> Continue with GitHub
-              </button>
-              <button
-                type="button"
-                onClick={handleGoogleAuth}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "transparent",
-                  color: "#4285f4",
-                  border: "none",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  transition: "color 0.2s"
-                }}
-                onMouseOver={(e) => e.target.style.color = "#1a73e8"}
-                onMouseOut={(e) => e.target.style.color = "#4285f4"}
-              >
-                <span>🔍</span> Continue with Google
-              </button>
-            </div>
-          </div>
-        ) : null}
+        ) : (
+          <>
+            <label>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+            />
+          </>
+        )}
 
-          {isSignUp && verificationMethod !== "github" && (
+          {isSignUp && (
             <>
               <label>Username</label>
               <div style={{ position: "relative" }}>
@@ -366,18 +298,16 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
             </>
           )}
 
-          {verificationMethod !== "github" && (
-            <>
-              <label>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </>
-          )}
+          <>
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </>
 
           {!isSignUp && (
             <div className="auth-options">
@@ -392,12 +322,45 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
             </div>
           )}
 
-          {verificationMethod !== "github" && (
-            <button type="submit" disabled={isSignUp && signUpDisabled}>
-              {isSignUp ? "Sign Up" : "Log In"}
-            </button>
-          )}
+          <button type="submit" disabled={isSignUp && signUpDisabled}>
+            {isSignUp ? "Sign Up" : "Log In"}
+          </button>
         </form>
+
+      {/* OAuth authentication options for sign up */}
+      {isSignUp && (
+        <div className="oauth-section">
+          <div className="oauth-divider">
+            <span>Or sign up with</span>
+          </div>
+          <div className="oauth-buttons">
+            <button
+              type="button"
+              onClick={handleGitHubAuth}
+              className="oauth-btn github-btn"
+            >
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+              </svg>
+              
+            GitHub
+            </button>
+            <button
+              type="button"
+              onClick={handleGoogleAuth}
+              className="oauth-btn google-btn"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Google
+            </button>
+          </div>
+        </div>
+      )}
 
       <p style={{ marginTop: "1rem" }}>
         {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
@@ -411,72 +374,45 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
             setUsername("");
             setUsernameStatus("");
             setSignUpDisabled(false);
-            setVerificationMethod("email");
             setEmail("");
           }}
         >
           {isSignUp ? "Log In" : "Sign Up"}
         </button>
-        {verificationMethod !== "github" && (
-          <button type="button" className="forgot-btn" onClick={handleForgotPassword}>
-            Forgot Password?
-          </button>
-        )}
+        <button type="button" className="forgot-btn" onClick={handleForgotPassword}>
+          Forgot Password?
+        </button>
       </p>
       
       {/* OAuth authentication options for login only */}
       {!isSignUp && (
-        <div style={{ 
-          textAlign: "right", 
-          margin: "1.5rem 0", 
-          borderTop: "1px solid #e1e4e8", 
-          paddingTop: "1.5rem" 
-        }}>
-          <p style={{ margin: "0 0 1rem 0", color: "#666", fontSize: "0.9rem", textAlign: "center" }}>
-            Or continue with
-          </p>
-          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+        <div className="oauth-section">
+          <div className="oauth-divider">
+            <span>Or continue with</span>
+          </div>
+          <div className="oauth-buttons">
             <button
               type="button"
               onClick={handleGitHubAuth}
-              style={{
-                padding: "12px 24px",
-                backgroundColor: "transparent",
-                color: "#24292e",
-                border: "none",
-                fontSize: "16px",
-                fontWeight: "600",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                transition: "color 0.2s"
-              }}
-              onMouseOver={(e) => e.target.style.color = "#0366d6"}
-              onMouseOut={(e) => e.target.style.color = "#24292e"}
+              className="oauth-btn github-btn"
             >
-             🐙 GitHub
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+              </svg>
+              GitHub
             </button>
             <button
               type="button"
               onClick={handleGoogleAuth}
-              style={{
-                padding: "12px 24px",
-                backgroundColor: "transparent",
-                color: "#4285f4",
-                border: "none",
-                fontSize: "16px",
-                fontWeight: "600",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                transition: "color 0.2s"
-              }}
-              onMouseOver={(e) => e.target.style.color = "#1a73e8"}
-              onMouseOut={(e) => e.target.style.color = "#4285f4"}
+              className="oauth-btn google-btn"
             >
-             🔍 Google
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Google
             </button>
           </div>
         </div>

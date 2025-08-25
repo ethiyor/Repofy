@@ -1435,12 +1435,122 @@ a:hover {
 
 .forgot-btn {
   background: none;
+  background-color: transparent;
   border: none;
+  outline: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
   color: #0077cc;
   text-decoration: underline;
   cursor: pointer;
   font-size: 0.9rem;
-  padding: 0;
+}
+
+.forgot-btn:hover {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  color: #0056b3;
+  opacity: 1;
+}
+
+.forgot-btn:focus {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+/* === OAUTH SECTION === */
+.oauth-section {
+  margin: 1.5rem 0;
+  border-top: 1px solid #e1e4e8;
+  padding-top: 1.5rem;
+}
+
+.oauth-divider {
+  position: relative;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.oauth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #e1e4e8;
+  z-index: 1;
+}
+
+.oauth-divider span {
+  background-color: #fff;
+  padding: 0 1rem;
+  color: #666;
+  font-size: 0.9rem;
+  position: relative;
+  z-index: 2;
+}
+
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.oauth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-decoration: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.oauth-btn:hover {
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.8;
+}
+
+.oauth-btn:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.github-btn {
+  color: #24292f;
+}
+
+.github-btn:hover {
+  color: #24292f;
+  opacity: 0.7;
+}
+
+.google-btn {
+  color: #4285f4;
+}
+
+.google-btn:hover {
+  color: #4285f4;
+  opacity: 0.7;
 }
 
 /* === DARK MODE === */
@@ -1599,6 +1709,78 @@ body.dark .logout-btn-inline {
 
 body.dark .logout-btn-inline:hover {
   background-color: #343a40;
+}
+
+/* === DARK MODE OAUTH SECTION === */
+body.dark .oauth-section {
+  border-top-color: #30363d;
+}
+
+body.dark .oauth-divider::before {
+  background-color: #30363d;
+}
+
+body.dark .oauth-divider span {
+  background-color: #2a2a2a;
+  color: #8b949e;
+}
+
+body.dark .oauth-btn {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+body.dark .oauth-btn:hover {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  opacity: 0.8;
+}
+
+body.dark .github-btn {
+  color: #f0f6fc;
+}
+
+body.dark .github-btn:hover {
+  color: #f0f6fc;
+  opacity: 0.7;
+}
+
+body.dark .google-btn {
+  color: #4285f4;
+}
+
+body.dark .google-btn:hover {
+  color: #4285f4;
+  opacity: 0.7;
+}
+
+body.dark .forgot-btn {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  color: #58a6ff;
+}
+
+body.dark .forgot-btn:hover {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  color: #4493f8;
+  opacity: 1;
+}
+
+body.dark .forgot-btn:focus {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
 /* === NAVBAR PROFILE STYLING === */
