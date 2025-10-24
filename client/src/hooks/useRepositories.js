@@ -40,6 +40,9 @@ export const useRepositories = (session) => {
       setRepos(enrichedRepos);
     } catch (err) {
       setError(err.message);
+      if (typeof window !== 'undefined') {
+        window.notify?.error(`Could not load repositories: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -48,10 +51,10 @@ export const useRepositories = (session) => {
   const uploadRepo = async (repoData, token) => {
     if (!token) throw new Error("No authentication token");
 
-    const { title, description, tags, code, isPublic } = repoData;
+    const { title, description, tags, code, isPublic, files: treeFiles } = repoData;
 
-    if (!title || !description || !code) {
-      throw new Error("All fields must be filled out.");
+    if (!title || !description || (!code && (!treeFiles || treeFiles.length === 0))) {
+      throw new Error("Please provide initial code or a folder structure.");
     }
 
     try {
@@ -78,24 +81,43 @@ export const useRepositories = (session) => {
 
       const repo_id = repoResponseData.id;
 
-      // Upload file
-      const fileRes = await fetch(`${API_BASE_URL}/upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: "main.js", content: code, repo_id }),
-      });
+      if (treeFiles && treeFiles.length > 0) {
+        // Batch upload tree with paths
+        const treeRes = await fetch(`${API_BASE_URL}/repos/${repo_id}/tree`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ files: treeFiles.map(f => ({ path: f.path, content: f.content })) }),
+        });
 
-      if (!fileRes.ok) {
-        const err = await fileRes.json();
-        throw new Error(err.error || "File upload failed");
+        if (!treeRes.ok) {
+          const err = await treeRes.json();
+          throw new Error(err.error || "Folder structure upload failed");
+        }
+      } else {
+        // Single file fallback
+        const fileRes = await fetch(`${API_BASE_URL}/upload`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ name: "main.js", content: code, repo_id }),
+        });
+
+        if (!fileRes.ok) {
+          const err = await fileRes.json();
+          throw new Error(err.error || "File upload failed");
+        }
       }
 
       // Refresh repositories
       await fetchRepos(token);
-      return "Repository and file uploaded successfully!";
+      return treeFiles && treeFiles.length > 0
+        ? "Repository and folder structure uploaded successfully!"
+        : "Repository and file uploaded successfully!";
     } catch (err) {
       throw new Error(err.message);
     }

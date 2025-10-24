@@ -11,6 +11,7 @@ import GitHubCallbackPage from "./GitHubCallbackPage";
 import "./App.css";
 import Navbar from "./Navbar";
 import NotificationSystem from "./components/NotificationSystem";
+import FolderBuilder from "./components/FolderBuilder";
 import { useAuth } from "./hooks/useAuth";
 import { useRepositories } from "./hooks/useRepositories";
 
@@ -23,6 +24,8 @@ function App() {
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+  const [structureMode, setStructureMode] = useState(false);
+  const [treeFiles, setTreeFiles] = useState([]);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showPublicProfile, setShowPublicProfile] = useState(false);
@@ -59,19 +62,24 @@ function App() {
   // Enhanced upload function with better error handling
   const uploadRepo = async () => {
     try {
-      const result = await hookUploadRepo({
+      const payload = {
         title,
         description,
         tags,
         code,
-        isPublic
-      }, session?.access_token);
+        isPublic,
+        files: structureMode ? treeFiles : undefined
+      };
+
+      const result = await hookUploadRepo(payload, session?.access_token);
       
       window.notify?.success(result);
       setTitle("");
       setDescription("");
       setTags("");
       setCode("");
+      setTreeFiles([]);
+      setStructureMode(false);
       setIsPublic(true);
       setShowUploadForm(false);
     } catch (err) {
@@ -302,6 +310,10 @@ function App() {
                     setIsPublic={setIsPublic}
                     showUploadForm={showUploadForm}
                     setShowUploadForm={setShowUploadForm}
+                    structureMode={structureMode}
+                    setStructureMode={setStructureMode}
+                    treeFiles={treeFiles}
+                    setTreeFiles={setTreeFiles}
                     onShowProfile={() => setShowProfile(true)}
                     onShowUserProfile={showUserProfile}
                     onShowMyRepositories={handleShowMyRepositories}
@@ -363,6 +375,10 @@ function Dashboard({
   setIsPublic,
   showUploadForm,
   setShowUploadForm,
+  structureMode,
+  setStructureMode,
+  treeFiles,
+  setTreeFiles,
   onShowProfile,
   onShowUserProfile,
   onShowMyRepositories,
@@ -390,6 +406,8 @@ function Dashboard({
       setDescription("");
       setTags("");
       setCode("");
+      setTreeFiles([]);
+      setStructureMode(false);
       setIsPublic(true);
     }
   };
@@ -453,16 +471,33 @@ function Dashboard({
             </div>
 
             <div className="form-group">
-              <label htmlFor="repo-code">Initial Code Content *</label>
-              <textarea
-                id="repo-code"
-                placeholder="Paste your code here..."
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="form-input code-input"
-                rows={8}
-              />
+              <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={structureMode}
+                  onChange={(e) => setStructureMode(e.target.checked)}
+                />
+                <span className="checkbox-text">Use folder structure (multiple files with paths)</span>
+              </label>
             </div>
+
+            {!structureMode ? (
+              <div className="form-group">
+                <label htmlFor="repo-code">Initial Code Content *</label>
+                <textarea
+                  id="repo-code"
+                  placeholder="Paste your code here..."
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="form-input code-input"
+                  rows={8}
+                />
+              </div>
+            ) : (
+              <div className="form-group">
+                <FolderBuilder files={treeFiles} onChange={setTreeFiles} />
+              </div>
+            )}
 
             <div className="form-group checkbox-group">
               <label className="checkbox-label">
@@ -479,7 +514,7 @@ function Dashboard({
               <button 
                 onClick={uploadRepo} 
                 className="btn-primary"
-                disabled={!title || !description || !code}
+                disabled={!title || !description || (!structureMode && !code) || (structureMode && (!treeFiles || treeFiles.length === 0 || !treeFiles.every(f => f.path && f.content)))}
               >
                 🚀 Create Repository
               </button>

@@ -122,3 +122,79 @@ CREATE TRIGGER update_comments_updated_at
 
 -- Add comment to the comments table
 COMMENT ON TABLE comments IS 'Repository comments from users';
+
+-- Ensure repos table exists (core repository metadata)
+CREATE TABLE IF NOT EXISTS repos (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    tags TEXT[],
+    is_public BOOLEAN DEFAULT true,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    star_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Indexes for repos
+CREATE INDEX IF NOT EXISTS repos_user_id_idx ON repos(user_id);
+CREATE INDEX IF NOT EXISTS repos_public_idx ON repos(is_public);
+CREATE INDEX IF NOT EXISTS repos_created_at_idx ON repos(created_at);
+
+-- Update trigger for repos.updated_at
+CREATE OR REPLACE FUNCTION update_repos_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = timezone('utc'::text, now());
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_repos_updated_at ON repos;
+CREATE TRIGGER update_repos_updated_at
+    BEFORE UPDATE ON repos
+    FOR EACH ROW EXECUTE FUNCTION update_repos_updated_at();
+
+-- Ensure files table exists with path support for folder structures
+CREATE TABLE IF NOT EXISTS files (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT REFERENCES repos(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    path TEXT, -- directory path like 'src/components'
+    content TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Add path column if table already exists but lacks it
+ALTER TABLE IF EXISTS files ADD COLUMN IF NOT EXISTS path TEXT;
+
+-- Indexes for efficient queries
+CREATE INDEX IF NOT EXISTS files_repo_id_idx ON files(repo_id);
+CREATE INDEX IF NOT EXISTS files_repo_path_idx ON files(repo_id, path);
+CREATE INDEX IF NOT EXISTS files_created_at_idx ON files(created_at);
+
+-- Enable RLS on files and add policies
+ALTER TABLE files ENABLE ROW LEVEL SECURITY;
+
+-- Allow reading files for public repos or owners via RPC context (simplified: open read; app enforces access)
+DO $$ BEGIN
+    CREATE POLICY files_read_all ON files FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Only allow inserts/updates/deletes by the owner via app-side checks; keep DB permissive but audited
+-- If stricter DB policies are desired, implement with joins to repos and auth.uid()
+
+-- Update trigger for files.updated_at
+CREATE OR REPLACE FUNCTION update_files_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = timezone('utc'::text, now());
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_files_updated_at ON files;
+CREATE TRIGGER update_files_updated_at
+    BEFORE UPDATE ON files
+    FOR EACH ROW EXECUTE FUNCTION update_files_updated_at();

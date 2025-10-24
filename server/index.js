@@ -533,7 +533,7 @@ app.post("/repos", checkAuth, async (req, res) => {
 });
 
 app.post("/upload", checkAuth, async (req, res) => {
-  const { name, content, repo_id } = req.body;
+  const { name, content, repo_id, path } = req.body;
   if (!repo_id) return res.status(400).json({ error: "Missing repo_id" });
 
   // Verify ownership
@@ -548,14 +548,64 @@ app.post("/upload", checkAuth, async (req, res) => {
     return res.status(403).json({ error: "Forbidden" });
   }
 
+  // Basic path validation to prevent directory traversal
+  const safePath = typeof path === 'string' ? path.replace(/\\/g, '/').replace(/\.\.+/g, '') : null;
+
   const { data, error } = await supabaseAdmin
     .from("files")
-    .insert([{ name, content, repo_id }])
+    .insert([{ name, content, repo_id, path: safePath }])
     .select()
     .single();
 
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true, file: data });
+});
+
+// Batch upload a repository tree (multiple files with paths)
+app.post("/repos/:id/tree", checkAuth, async (req, res) => {
+  const { id } = req.params;
+  const { files } = req.body; // [{ path: 'src/index.js', content: '...' }]
+
+  if (!Array.isArray(files) || files.length === 0) {
+    return res.status(400).json({ error: "No files provided" });
+  }
+
+  // Verify ownership
+  const { data: repo, error: repoError } = await supabaseAdmin
+    .from("repos")
+    .select("user_id")
+    .eq("id", id)
+    .single();
+
+  if (repoError) return res.status(500).json({ error: repoError.message });
+  if (!repo || repo.user_id !== req.user.id) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  // Prepare rows with validation
+  const rows = [];
+  for (const f of files) {
+    if (!f || typeof f !== 'object') continue;
+    const fullPath = (f.path || '').replace(/\\/g, '/');
+    if (!fullPath || fullPath.endsWith('/')) continue; // skip invalid or folder-only entries
+    if (fullPath.includes('..')) return res.status(400).json({ error: "Invalid path" });
+    const parts = fullPath.split('/');
+    const fileName = parts.pop();
+    const dirPath = parts.length ? parts.join('/') : null;
+    rows.push({ name: fileName, path: dirPath, content: f.content || '', repo_id: id });
+  }
+
+  if (rows.length === 0) {
+    return res.status(400).json({ error: "No valid files to upload" });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("files")
+    .insert(rows)
+    .select("id,name,path,repo_id,created_at");
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, count: data?.length || 0, files: data });
 });
 
 app.get("/repos/:id/files", checkAuth, async (req, res) => {

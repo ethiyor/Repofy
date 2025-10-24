@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 // Use environment-based URLs
-const API_BASE_URL = 'https://repofy-backend.onrender.com';
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://repofy-backend.onrender.com'
+  : 'http://localhost:4000';
 
 function RepositoryDetail({ session, repo, onBack, onStar, onDownload }) {
   // Ref for the top of the detail view (Back to Community button)
@@ -15,6 +17,7 @@ function RepositoryDetail({ session, repo, onBack, onStar, onDownload }) {
   }, [repo]);
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState([]);
+  const [expandedNodes, setExpandedNodes] = useState({});
   const [commentTexts, setCommentTexts] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
@@ -191,13 +194,79 @@ function RepositoryDetail({ session, repo, onBack, onStar, onDownload }) {
     return content.split('\n').length > maxLines;
   };
 
+  // Build a simple tree from files with optional path
+  const buildTree = (fileList) => {
+    const root = { type: 'dir', name: '', children: {} };
+    for (const f of fileList) {
+      const dir = (f.path || '').replace(/\\/g, '/');
+      const parts = dir ? dir.split('/') : [];
+      let node = root;
+      for (const p of parts) {
+        if (!p) continue;
+        node.children[p] = node.children[p] || { type: 'dir', name: p, children: {} };
+        node = node.children[p];
+      }
+      const fileName = f.name || 'file';
+      node.children[fileName] = { type: 'file', name: fileName, file: f };
+    }
+    return root;
+  };
+
+  const tree = buildTree(files);
+
+  const toggleNode = (pathKey) => {
+    setExpandedNodes(prev => ({ ...prev, [pathKey]: !prev[pathKey] }));
+  };
+
+  const renderTree = (node, basePath = '') => {
+    const entries = Object.values(node.children || {}).sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    return (
+      <ul className="file-tree">
+        {entries.map((child) => {
+          const childPath = basePath ? `${basePath}/${child.name}` : child.name;
+          if (child.type === 'dir') {
+            const isOpen = !!expandedNodes[childPath];
+            return (
+              <li key={childPath}>
+                <div className="tree-node" onClick={() => toggleNode(childPath)}>
+                  <span className="folder-icon">{isOpen ? '📂' : '📁'}</span> {child.name}
+                </div>
+                {isOpen && renderTree(child, childPath)}
+              </li>
+            );
+          }
+          // file
+          const f = child.file;
+          const idx = files.indexOf(f);
+          const isExpanded = expandedFiles.has(idx);
+          return (
+            <li key={childPath}>
+              <div className="tree-node" onClick={() => toggleFileExpansion(idx)}>
+                <span className="file-icon">📄</span> {child.name}
+              </div>
+              {isExpanded && (
+                <pre className="file-content">
+{truncateContent(f.content || '')}
+{shouldTruncate(f.content || '') && '\n...'}
+                </pre>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
   if (!repo) {
     return <div>Repository not found</div>;
   }
 
   return (
     <div className="repository-detail-container" ref={topRef}>
-      {/* Header with Back Button */}
+  {/* Header with Back Button */}
       <div className="repo-detail-header">
         <button onClick={onBack} className="btn-secondary back-btn">
           ← Back to Community
@@ -243,89 +312,17 @@ function RepositoryDetail({ session, repo, onBack, onStar, onDownload }) {
         </div>
       </div>
 
-      {/* Tags */}
-      {repo.tags && repo.tags.length > 0 && (
-        <div className="repo-tags-section">
-          <h3>Tags:</h3>
-          <div className="repo-tags">
-            {repo.tags.map((tag, index) => (
-              <span key={index} className="tag">{tag}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Files Section */}
-      <div className="files-detail-section">
-        <h3>📁 Files ({files.length}):</h3>
+      {/* Files Tree */}
+      <div className="files-section">
+        <h3>Files</h3>
         {loading ? (
-          <div className="loading-files">
-            <p>Loading files...</p>
-          </div>
-        ) : files.length > 0 ? (
-          <div className="files-list-detail">
-            {files.map((file, index) => {
-              const isExpanded = expandedFiles.has(index);
-              const needsTruncation = shouldTruncate(file.content);
-              const displayContent = needsTruncation && !isExpanded 
-                ? truncateContent(file.content) 
-                : file.content;
-
-              return (
-                <div key={index} className="file-block-detail">
-                  <div className="file-header">
-                    <span className="file-name">📄 {file.name}</span>
-                    <div className="file-actions">
-                      <span className="file-size">{file.content?.length || 0} chars</span>
-                    </div>
-                  </div>
-                  {file.content && (
-                    <div className="file-content-section">
-                      <pre className="code-block-detail">
-                        <code>{displayContent}</code>
-                      </pre>
-                      {needsTruncation && (
-                        <div className="file-expansion-controls">
-                          <button
-                            onClick={() => toggleFileExpansion(index)}
-                            className="see-more-btn"
-                          >
-                            {isExpanded ? '▲ Show less' : '▼ ... see more'}
-                          </button>
-                        </div>
-                      )}
-                      {/* Action buttons below code content */}
-                      <div className="file-bottom-actions">
-                        <button
-                          onClick={handleStarRepo}
-                          className="file-action-btn star-btn"
-                          title="Star Repository"
-                        >
-                          Star
-                        </button>
-                        <button
-                          onClick={toggleComments}
-                          className="file-action-btn comment-btn"
-                          title="Toggle Comments"
-                        >
-                          Comment
-                        </button>
-                        <button
-                          onClick={() => onDownload(file)}
-                          className="file-action-btn download-btn"
-                          title="Download File"
-                        >
-                          Download
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <div>Loading files...</div>
+        ) : files.length === 0 ? (
+          <div className="empty-state">No files uploaded yet.</div>
         ) : (
-          <p>No files found in this repository.</p>
+          <div className="files-tree-list">
+            {renderTree(tree)}
+          </div>
         )}
       </div>
 
