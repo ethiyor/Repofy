@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import AuthForm from "./AuthForm";
 import RepoList from "./RepoList";
 import MyRepositories from "./MyRepositories";
 import RepositoryDetail from "./RepositoryDetail";
+import RepoEditor from "./RepoEditor";
 import UserProfile from "./UserProfile";
 import PublicProfile from "./PublicProfile";
 import ConfirmPage from "./ConfirmPage";
@@ -15,6 +16,8 @@ import { useAuth } from "./hooks/useAuth";
 import { useRepositories } from "./hooks/useRepositories";
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { session, userProfile, setUserProfile, loading, logout } = useAuth();
   const { repos, setRepos, uploadRepo: hookUploadRepo, starRepo: hookStarRepo, createRepository, uploadFile } = useRepositories(session);
   const [title, setTitle] = useState("");
@@ -52,6 +55,14 @@ function App() {
     }
   }, [message]);
 
+  // Open create repo form when ?createRepo=1 is present
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('createRepo') === '1') {
+      setShowUploadForm(true);
+    }
+  }, [location.search]);
+
   // Use environment-based URLs
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
     ? 'https://repofy-backend.onrender.com' 
@@ -87,8 +98,9 @@ function App() {
   const handleCreateRepoOnly = async () => {
     try {
       const repo = await createRepository({ title, description, tags, isPublic }, session?.access_token);
-      setCreatedRepo(repo);
-      window.notify?.success("Repository created. Now add files below.");
+      window.notify?.success("Repository created. Redirecting to editor...");
+      // Navigate to repo editor page
+      navigate(`/repos/${repo.id}/edit`);
     } catch (err) {
       window.notify?.error(err.message);
     }
@@ -238,7 +250,6 @@ function App() {
   }
 
   return (
-    <Router>
       <div className="App">
         <NotificationSystem />
         <Navbar 
@@ -256,7 +267,7 @@ function App() {
           <p className="tagline">Your personal mini GitHub – simplified and fast.</p>
         </header>
 
-        <Routes>
+  <Routes>
           <Route
             path="/"
             element={
@@ -340,9 +351,10 @@ function App() {
               )
             }
           />
+          <Route path="/repos/:id/edit" element={<RepoEditor session={session} />} />
           <Route path="/confirm" element={<ConfirmPage />} />
           <Route path="/auth/callback" element={<GitHubCallbackPage />} />
-        </Routes>
+  </Routes>
 
         <footer className="footer">
           <hr />
@@ -354,7 +366,6 @@ function App() {
           </p>
         </footer>
       </div>
-    </Router>
   );
 }
 

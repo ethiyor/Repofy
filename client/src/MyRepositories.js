@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Analytics from "./components/Analytics";
 import "./App.css";
 
@@ -8,20 +9,13 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
   : 'http://localhost:4000';
 
 function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, uploadRepo }) {
+  const navigate = useNavigate();
   const [loadingRepoId, setLoadingRepoId] = useState(null);
   const [commentTexts, setCommentTexts] = useState({});
   const [showComments, setShowComments] = useState({});
   const [expandedRepos, setExpandedRepos] = useState({});
-  const [showUploadForm, setShowUploadForm] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   
-  // Upload form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [tags, setTags] = useState("");
-  const [code, setCode] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
-  const [message, setMessage] = useState("");
 
   // Filter only current user's repos
   const currentUserRepos = repos.filter(repo => repo.user_id === session.user.id);
@@ -153,96 +147,13 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
     }
   };
 
-  const handleUploadRepo = async () => {
-    if (!title.trim() || !code.trim()) {
-      setMessage("❌ Please fill in at least the title and code fields.");
-      return;
-    }
-
-    try {
-      // Step 1: Create the repository
-      const repoResponse = await fetch(`${API_BASE_URL}/repos`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          name: title.trim(),
-          description: description.trim(),
-          tags: tags.trim().split(',').map(tag => tag.trim()).filter(tag => tag),
-          is_public: isPublic,
-        }),
-      });
-
-      const repoData = await repoResponse.json();
-
-      if (!repoResponse.ok) {
-        setMessage(`❌ Error creating repository: ${repoData.error}`);
-        return;
-      }
-
-      // Step 2: Upload the file to the repository
-      const fileResponse = await fetch(`${API_BASE_URL}/upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          name: "main.txt", // Default filename, could be made configurable
-          content: code.trim(),
-          repo_id: repoData.id,
-        }),
-      });
-
-      const fileData = await fileResponse.json();
-
-      if (fileResponse.ok) {
-        // Add the new repo to the list with the uploaded file
-        const newRepo = {
-          ...repoData,
-          files: [fileData], // Include the uploaded file
-          username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'user',
-          display_name: session.user.user_metadata?.display_name || session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'User',
-          avatar_url: null // Will be loaded from profile
-        };
-        setRepos([newRepo, ...repos]);
-        
-        // Reset form
-        setTitle("");
-        setDescription("");
-        setTags("");
-        setCode("");
-        setIsPublic(true);
-        setShowUploadForm(false);
-        setMessage("✅ Repository uploaded successfully!");
-        
-        // Clear message after 3 seconds
-        setTimeout(() => setMessage(""), 3000);
-      } else {
-        setMessage(`❌ Error uploading file: ${fileData.error}`);
-      }
-    } catch (error) {
-      setMessage("❌ Error uploading repository: " + error.message);
-    }
-  };
-
-  const toggleUploadForm = () => {
-    setShowUploadForm(!showUploadForm);
-    // Close analytics when opening upload form
-    if (!showUploadForm) {
-      setShowAnalytics(false);
-    }
-    setMessage("");
+  // Navigate to unified create flow on the home page
+  const handleCreateRepoNavigate = () => {
+    navigate('/?createRepo=1');
   };
 
   const toggleAnalytics = () => {
     setShowAnalytics(!showAnalytics);
-    // Close upload form when opening analytics
-    if (!showAnalytics) {
-      setShowUploadForm(false);
-    }
   };
 
   return (
@@ -261,20 +172,14 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
             📊 {showAnalytics ? 'Hide' : 'Show'} Analytics
           </button>
           <button 
-            onClick={toggleUploadForm} 
+            onClick={handleCreateRepoNavigate} 
             className="btn-primary upload-btn"
           >
-            ➕ {showUploadForm ? 'Cancel' : 'New Repository'}
+            ➕ Create New Repository
           </button>
         </div>
       </div>
 
-      {/* Message Display */}
-      {message && (
-        <div className={`message ${message.includes('❌') ? 'error' : 'success'}`}>
-          {message}
-        </div>
-      )}
 
       {/* Analytics Section */}
       {showAnalytics && (
@@ -283,89 +188,7 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
         </div>
       )}
 
-      {/* Upload Form */}
-      {showUploadForm && (
-        <div className="upload-section">
-          <div className="upload-form">
-            <h3>Create New Repository</h3>
-            
-            <div className="form-group">
-              <label htmlFor="title">Repository Name *</label>
-              <input
-                id="title"
-                type="text"
-                placeholder="Enter repository name..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="form-input"
-              />
-            </div>
 
-            <div className="form-group">
-              <label htmlFor="description">Description</label>
-              <textarea
-                id="description"
-                placeholder="Describe your repository..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="form-input"
-                rows={3}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="tags">Tags (comma-separated)</label>
-              <input
-                id="tags"
-                type="text"
-                placeholder="javascript, react, nodejs..."
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="code">Code Content *</label>
-              <textarea
-                id="code"
-                placeholder="Paste your code here..."
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="form-input code-input"
-                rows={8}
-              />
-            </div>
-
-            <div className="form-group checkbox-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                />
-                <span className="checkbox-text">Make this repository public</span>
-              </label>
-            </div>
-
-            <div className="form-actions">
-              <button 
-                onClick={handleUploadRepo} 
-                className="btn-primary"
-                disabled={!title.trim() || !code.trim()}
-              >
-                🚀 Create Repository
-              </button>
-              <button 
-                onClick={toggleUploadForm} 
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Repository Summary */}
       <div className="repo-summary">
@@ -544,81 +367,16 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
         ) : (
           <div className="empty-state">
             <h3>No Repositories Yet</h3>
-            <p>Start by uploading your first repository!</p>
+            <p>Start by creating your first repository!</p>
           </div>
         )}
       </div>
 
-      {/* Upload Section */}
+      {/* Create Repository CTA */}
       <div className="upload-section-container">
-        <button onClick={toggleUploadForm} className="btn-primary upload-toggle-btn">
-          {showUploadForm ? "Cancel Upload" : "📁 Upload New Repository"}
+        <button onClick={handleCreateRepoNavigate} className="btn-primary upload-toggle-btn">
+          📁 Create New Repository
         </button>
-
-        {showUploadForm && (
-          <div className="upload-section">
-            <h3>Create a New Repository</h3>
-
-            <label><strong>Repository Title</strong></label>
-            <input
-              placeholder="Enter title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-
-            <label><strong>Description</strong></label>
-            <input
-              placeholder="Short description of your project"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-
-            <label><strong>Tags</strong> (comma-separated)</label>
-            <input
-              placeholder="#react, #api"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-            />
-
-            <label><strong>Visibility</strong></label>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ marginRight: '1rem' }}>
-                <input
-                  type="radio"
-                  name="visibility"
-                  checked={isPublic}
-                  onChange={() => setIsPublic(true)}
-                />
-                Public
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="visibility"
-                  checked={!isPublic}
-                  onChange={() => setIsPublic(false)}
-                />
-                Private
-              </label>
-            </div>
-
-            <label><strong>Code Content</strong></label>
-            <textarea
-              className="code-input"
-              placeholder="Paste your code here..."
-              rows={10}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-
-            <div className="upload-actions">
-              <button onClick={handleUploadRepo} className="btn-primary">Upload Repository</button>
-              <button onClick={toggleUploadForm} className="btn-secondary">Cancel</button>
-            </div>
-            
-            {message && <div className="status-message">{message}</div>}
-          </div>
-        )}
       </div>
     </div>
   );
