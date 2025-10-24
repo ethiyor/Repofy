@@ -149,7 +149,10 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
 
   // Navigate to unified create flow on the home page
   const handleCreateRepoNavigate = () => {
-    navigate('/?createRepo=1');
+    // Ensure parent switches back to Community/Dashboard view first
+    onBack?.();
+    // Then trigger the dashboard's create form via query param (next tick)
+    setTimeout(() => navigate('/?createRepo=1'), 0);
   };
 
   const toggleAnalytics = () => {
@@ -372,12 +375,7 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
         )}
       </div>
 
-      {/* Create Repository CTA */}
-      <div className="upload-section-container">
-        <button onClick={handleCreateRepoNavigate} className="btn-primary upload-toggle-btn">
-          📁 Create New Repository
-        </button>
-      </div>
+
     </div>
   );
 }
