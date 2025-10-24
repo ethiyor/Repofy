@@ -312,6 +312,18 @@ function RepositoryDetail({ session, repo, onBack, onStar, onDownload }) {
         </div>
       </div>
 
+          {/* About Section */}
+          <div className="repo-about-section">
+            <h3>About</h3>
+            <div className="about-grid">
+              <div className="about-item"><strong>Visibility:</strong> {repo.is_public ? 'Public' : 'Private'}</div>
+              <div className="about-item"><strong>Stars:</strong> {repo.star_count || 0}</div>
+              <div className="about-item"><strong>Comments:</strong> {comments?.length || 0}</div>
+              <div className="about-item"><strong>Created:</strong> {formatDate(repo.created_at)}</div>
+              <div className="about-item"><strong>Owner:</strong> {repo.display_name} (@{repo.username})</div>
+            </div>
+          </div>
+
       {/* Files Tree */}
       <div className="files-section">
         <h3>Files</h3>

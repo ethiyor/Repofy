@@ -243,7 +243,7 @@ function Navbar({ onToggleDarkMode, userProfile, session, onShowProfile, onLogou
                     fontWeight: "500"
                   }}
                 >
-                  Upload New Repository
+                  Create New Repository
                 </button>
                 
                 <button

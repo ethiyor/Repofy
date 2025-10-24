@@ -11,21 +11,18 @@ import GitHubCallbackPage from "./GitHubCallbackPage";
 import "./App.css";
 import Navbar from "./Navbar";
 import NotificationSystem from "./components/NotificationSystem";
-import FolderBuilder from "./components/FolderBuilder";
 import { useAuth } from "./hooks/useAuth";
 import { useRepositories } from "./hooks/useRepositories";
 
 function App() {
   const { session, userProfile, setUserProfile, loading, logout } = useAuth();
-  const { repos, setRepos, uploadRepo: hookUploadRepo, starRepo: hookStarRepo } = useRepositories(session);
+  const { repos, setRepos, uploadRepo: hookUploadRepo, starRepo: hookStarRepo, createRepository, uploadFile } = useRepositories(session);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [isPublic, setIsPublic] = useState(true);
-  const [structureMode, setStructureMode] = useState(false);
-  const [treeFiles, setTreeFiles] = useState([]);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showPublicProfile, setShowPublicProfile] = useState(false);
@@ -34,6 +31,7 @@ function App() {
   const [selectedRepository, setSelectedRepository] = useState(null);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [createdRepo, setCreatedRepo] = useState(null);
 
   const toggleDarkMode = () => {
     const isDark = document.body.classList.toggle("dark");
@@ -68,7 +66,6 @@ function App() {
         tags,
         code,
         isPublic,
-        files: structureMode ? treeFiles : undefined
       };
 
       const result = await hookUploadRepo(payload, session?.access_token);
@@ -78,10 +75,20 @@ function App() {
       setDescription("");
       setTags("");
       setCode("");
-      setTreeFiles([]);
-      setStructureMode(false);
       setIsPublic(true);
       setShowUploadForm(false);
+      setCreatedRepo(null);
+    } catch (err) {
+      window.notify?.error(err.message);
+    }
+  };
+
+  // Step 1: create repo metadata only
+  const handleCreateRepoOnly = async () => {
+    try {
+      const repo = await createRepository({ title, description, tags, isPublic }, session?.access_token);
+      setCreatedRepo(repo);
+      window.notify?.success("Repository created. Now add files below.");
     } catch (err) {
       window.notify?.error(err.message);
     }
@@ -293,6 +300,7 @@ function App() {
                     userProfile={userProfile}
                     logout={handleLogout}
                     uploadRepo={uploadRepo}
+                    handleCreateRepoOnly={handleCreateRepoOnly}
                     title={title}
                     description={description}
                     tags={tags}
@@ -300,7 +308,6 @@ function App() {
                     setTitle={setTitle}
                     setDescription={setDescription}
                     setTags={setTags}
-                    setCode={setCode}
                     message={message}
                     repos={repos}
                     setRepos={setRepos}
@@ -310,10 +317,9 @@ function App() {
                     setIsPublic={setIsPublic}
                     showUploadForm={showUploadForm}
                     setShowUploadForm={setShowUploadForm}
-                    structureMode={structureMode}
-                    setStructureMode={setStructureMode}
-                    treeFiles={treeFiles}
-                    setTreeFiles={setTreeFiles}
+                    createdRepo={createdRepo}
+                    setCreatedRepo={setCreatedRepo}
+                    uploadFile={uploadFile}
                     onShowProfile={() => setShowProfile(true)}
                     onShowUserProfile={showUserProfile}
                     onShowMyRepositories={handleShowMyRepositories}
@@ -357,15 +363,13 @@ function Dashboard({
   session,
   userProfile,
   logout,
-  uploadRepo,
+  handleCreateRepoOnly,
   title,
   description,
   tags,
-  code,
   setTitle,
   setDescription,
   setTags,
-  setCode,
   message,
   repos,
   setRepos,
@@ -375,10 +379,9 @@ function Dashboard({
   setIsPublic,
   showUploadForm,
   setShowUploadForm,
-  structureMode,
-  setStructureMode,
-  treeFiles,
-  setTreeFiles,
+  createdRepo,
+  setCreatedRepo,
+  uploadFile,
   onShowProfile,
   onShowUserProfile,
   onShowMyRepositories,
@@ -405,10 +408,8 @@ function Dashboard({
       setTitle("");
       setDescription("");
       setTags("");
-      setCode("");
-      setTreeFiles([]);
-      setStructureMode(false);
       setIsPublic(true);
+      setCreatedRepo(null);
     }
   };
 
@@ -447,7 +448,7 @@ function Dashboard({
             </div>
 
             <div className="form-group">
-              <label htmlFor="repo-description">Description *</label>
+              <label htmlFor="repo-description">Description (optional)</label>
               <textarea
                 id="repo-description"
                 placeholder="Describe your repository..."
@@ -470,33 +471,14 @@ function Dashboard({
               />
             </div>
 
-            <div className="form-group">
-              <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={structureMode}
-                  onChange={(e) => setStructureMode(e.target.checked)}
-                />
-                <span className="checkbox-text">Use folder structure (multiple files with paths)</span>
-              </label>
-            </div>
+            {/* Single-path flow: create metadata first; files are added after creation */}
 
-            {!structureMode ? (
-              <div className="form-group">
-                <label htmlFor="repo-code">Initial Code Content *</label>
-                <textarea
-                  id="repo-code"
-                  placeholder="Paste your code here..."
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="form-input code-input"
-                  rows={8}
-                />
-              </div>
-            ) : (
-              <div className="form-group">
-                <FolderBuilder files={treeFiles} onChange={setTreeFiles} />
-              </div>
+            {createdRepo && (
+              <RepoFilesManager
+                repo={createdRepo}
+                session={session}
+                onUploadFile={uploadFile}
+              />
             )}
 
             <div className="form-group checkbox-group">
@@ -511,13 +493,25 @@ function Dashboard({
             </div>
 
             <div className="form-actions">
-              <button 
-                onClick={uploadRepo} 
-                className="btn-primary"
-                disabled={!title || !description || (!structureMode && !code) || (structureMode && (!treeFiles || treeFiles.length === 0 || !treeFiles.every(f => f.path && f.content)))}
-              >
-                🚀 Create Repository
-              </button>
+              {!createdRepo ? (
+                <button
+                  onClick={handleCreateRepoOnly}
+                  className="btn-primary"
+                  disabled={!title}
+                >
+                  🚀 Create Repository
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setTitle(""); setDescription(""); setTags(""); setIsPublic(true); setCreatedRepo(null);
+                    window.notify?.info("Repository setup complete");
+                  }}
+                  className="btn-secondary"
+                >
+                  Done
+                </button>
+              )}
               <button 
                 onClick={toggleUploadForm} 
                 className="btn-secondary"
@@ -544,6 +538,106 @@ function Dashboard({
           onShowMyRepositories={onShowMyRepositories}
           onShowRepositoryDetail={onShowRepositoryDetail}
         />
+      </div>
+    </div>
+  );
+}
+
+// Minimal file manager shown after creating a repo (step 2)
+function RepoFilesManager({ repo, session, onUploadFile }) {
+  const [dirPath, setDirPath] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [fileContent, setFileContent] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [fileInputBusy, setFileInputBusy] = useState(false);
+
+  const fullPath = () => {
+    const trimmed = (dirPath || "").trim().replace(/\\\\/g, '/').replace(/^\/+|\/+$/g, '');
+    return trimmed ? `${trimmed}/${fileName}` : fileName;
+  };
+
+  const handleCreateFile = async () => {
+    if (!fileName) {
+      window.notify?.error('Please enter a file name');
+      return;
+    }
+    setBusy(true);
+    try {
+      // Split to name + path for API (API takes name and optional path separately)
+      const p = (dirPath || '').trim().replace(/\\\\/g, '/').replace(/^\/+|\/+$/g, '');
+      await onUploadFile({ repo_id: repo.id, name: fileName, content: fileContent, path: p || null }, session.access_token);
+      setFileContent("");
+      window.notify?.success('File created');
+    } catch (e) {
+      window.notify?.error(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleUploadLocalFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileInputBusy(true);
+    try {
+      const text = await file.text();
+      const p = (dirPath || '').trim().replace(/\\\\/g, '/').replace(/^\/+|\/+$/g, '');
+      await onUploadFile({ repo_id: repo.id, name: file.name, content: text, path: p || null }, session.access_token);
+      window.notify?.success('File uploaded');
+      // clear input value so same file can be selected again
+      e.target.value = '';
+    } catch (err) {
+      window.notify?.error(err.message);
+    } finally {
+      setFileInputBusy(false);
+    }
+  };
+
+  return (
+    <div className="file-manager">
+      <h4>Step 2: Add files to <span className="code">{repo.name}</span></h4>
+      <div className="form-group">
+        <label>Directory path (optional)</label>
+        <input
+          type="text"
+          placeholder="e.g., src/components"
+          value={dirPath}
+          onChange={(e) => setDirPath(e.target.value)}
+          className="form-input"
+        />
+      </div>
+
+      <div className="file-actions-split">
+        <div className="new-file">
+          <div className="form-group">
+            <label>New file name</label>
+            <input
+              type="text"
+              placeholder="e.g., index.js"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              className="form-input"
+            />
+          </div>
+          <div className="form-group">
+            <label>File content</label>
+            <textarea
+              rows={8}
+              className="form-input code-input"
+              placeholder={`Content of ${fullPath() || 'your file'}...`}
+              value={fileContent}
+              onChange={(e) => setFileContent(e.target.value)}
+            />
+          </div>
+          <button className="btn-primary" onClick={handleCreateFile} disabled={busy || !fileName}>
+            Create file
+          </button>
+        </div>
+
+        <div className="upload-file">
+          <label>Upload a local file</label>
+          <input type="file" onChange={handleUploadLocalFile} disabled={fileInputBusy} />
+        </div>
       </div>
     </div>
   );

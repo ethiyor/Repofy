@@ -48,13 +48,60 @@ export const useRepositories = (session) => {
     }
   };
 
+  const createRepository = async ({ title, description, tags, isPublic }, token) => {
+    if (!token) throw new Error("No authentication token");
+    if (!title) throw new Error("Repository name is required.");
+
+    const repoRes = await fetch(`${API_BASE_URL}/repos`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name: title,
+        description: description || '',
+        tags: (tags || '').split(",").map((t) => t.trim()).filter(Boolean),
+        is_public: !!isPublic,
+      }),
+    });
+
+    const data = await repoRes.json();
+    if (!repoRes.ok) {
+      throw new Error(data.error || "Failed to create repository");
+    }
+    // Refresh list to include the new repo
+    await fetchRepos(token);
+    return data; // { id, ... }
+  };
+
+  const uploadFile = async ({ repo_id, name, content, path }, token) => {
+    if (!token) throw new Error("No authentication token");
+    if (!repo_id || !name) throw new Error("File name and repo_id are required");
+
+    const res = await fetch(`${API_BASE_URL}/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ repo_id, name, content: content || '', path: path || null }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "File upload failed");
+    }
+    return data.file;
+  };
+
   const uploadRepo = async (repoData, token) => {
     if (!token) throw new Error("No authentication token");
 
-    const { title, description, tags, code, isPublic, files: treeFiles } = repoData;
+  const { title, description, tags, code, isPublic, files: treeFiles } = repoData;
 
-    if (!title || !description || (!code && (!treeFiles || treeFiles.length === 0))) {
-      throw new Error("Please provide initial code or a folder structure.");
+    if (!title || (!code && (!treeFiles || treeFiles.length === 0))) {
+      throw new Error("Please provide a title and either initial code or a folder structure.");
     }
 
     try {
@@ -67,7 +114,7 @@ export const useRepositories = (session) => {
         },
         body: JSON.stringify({
           name: title,
-          description,
+          description: description || '',
           tags: tags.split(",").map((t) => t.trim()),
           is_public: isPublic,
         }),
@@ -156,6 +203,8 @@ export const useRepositories = (session) => {
     error,
     fetchRepos,
     uploadRepo,
+    createRepository,
+    uploadFile,
     starRepo,
     refreshRepos: () => session?.access_token && fetchRepos(session.access_token)
   };
