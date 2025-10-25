@@ -21,16 +21,38 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+// Basic env validation
+const { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.warn("[config] Missing SUPABASE_URL or SUPABASE_ANON_KEY. API auth will fail.");
+}
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn("[config] Missing SUPABASE_SERVICE_ROLE_KEY. Writing to database will fail under RLS.");
+}
 
-// Create a separate client for server operations (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Separate client for server operations (bypasses RLS)
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+app.get('/health/config', (req, res) => {
+  res.json({
+    supabaseUrlPresent: !!SUPABASE_URL,
+    anonKeyPresent: !!SUPABASE_ANON_KEY,
+    serviceRolePresent: !!SUPABASE_SERVICE_ROLE_KEY,
+  });
+});
+
+app.get('/health/db', async (req, res) => {
+  try {
+    const { error } = await supabaseAdmin.from('repos').select('id').limit(1);
+    if (error) {
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 
 async function checkAuth(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
@@ -461,6 +483,41 @@ app.get("/repos", checkAuth, async (req, res) => {
   }
 });
 
+// Public-only repositories (no auth required)
+app.get("/public/repos", async (req, res) => {
+  try {
+    const { data: repos, error: reposError } = await supabaseAdmin
+      .from("repos")
+      .select("*")
+      .eq("is_public", true);
+
+    if (reposError) throw reposError;
+
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("user_profiles")
+      .select("user_id, username, display_name, avatar_url");
+
+    if (profilesError && profilesError.code !== '42P01') throw profilesError;
+
+    const profileMap = {};
+    (profiles || []).forEach(p => { profileMap[p.user_id] = p; });
+
+    const enriched = repos.map(repo => {
+      const p = profileMap[repo.user_id];
+      return {
+        ...repo,
+        username: p?.username || 'user_' + repo.user_id.substring(0, 8),
+        display_name: p?.display_name || p?.username || 'User ' + repo.user_id.substring(0, 8),
+        avatar_url: p?.avatar_url || null,
+      };
+    });
+    res.json(enriched);
+  } catch (err) {
+    console.error('Error fetching public repos:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Helper function to ensure user has a profile
 async function ensureUserProfile(user) {
   try {
@@ -535,12 +592,14 @@ app.post("/repos", checkAuth, async (req, res) => {
 app.post("/upload", checkAuth, async (req, res) => {
   const { name, content, repo_id, path } = req.body;
   if (!repo_id) return res.status(400).json({ error: "Missing repo_id" });
+  const repoIdInt = parseInt(repo_id, 10);
+  if (Number.isNaN(repoIdInt)) return res.status(400).json({ error: "Invalid repo_id" });
 
   // Verify ownership
   const { data: repo, error: repoError } = await supabaseAdmin
     .from("repos")
     .select("user_id")
-    .eq("id", repo_id)
+    .eq("id", repoIdInt)
     .single();
 
   if (repoError) return res.status(500).json({ error: repoError.message });
@@ -553,7 +612,7 @@ app.post("/upload", checkAuth, async (req, res) => {
 
   const { data, error } = await supabaseAdmin
     .from("files")
-    .insert([{ name, content, repo_id, path: safePath }])
+    .insert([{ name, content, repo_id: repoIdInt, path: safePath }])
     .select()
     .single();
 
@@ -564,6 +623,8 @@ app.post("/upload", checkAuth, async (req, res) => {
 // Batch upload a repository tree (multiple files with paths)
 app.post("/repos/:id/tree", checkAuth, async (req, res) => {
   const { id } = req.params;
+  const repoIdInt = parseInt(id, 10);
+  if (Number.isNaN(repoIdInt)) return res.status(400).json({ error: "Invalid repo id" });
   const { files } = req.body; // [{ path: 'src/index.js', content: '...' }]
 
   if (!Array.isArray(files) || files.length === 0) {
@@ -574,7 +635,7 @@ app.post("/repos/:id/tree", checkAuth, async (req, res) => {
   const { data: repo, error: repoError } = await supabaseAdmin
     .from("repos")
     .select("user_id")
-    .eq("id", id)
+    .eq("id", repoIdInt)
     .single();
 
   if (repoError) return res.status(500).json({ error: repoError.message });
@@ -592,7 +653,7 @@ app.post("/repos/:id/tree", checkAuth, async (req, res) => {
     const parts = fullPath.split('/');
     const fileName = parts.pop();
     const dirPath = parts.length ? parts.join('/') : null;
-    rows.push({ name: fileName, path: dirPath, content: f.content || '', repo_id: id });
+  rows.push({ name: fileName, path: dirPath, content: f.content || '', repo_id: repoIdInt });
   }
 
   if (rows.length === 0) {
@@ -610,12 +671,14 @@ app.post("/repos/:id/tree", checkAuth, async (req, res) => {
 
 app.get("/repos/:id/files", checkAuth, async (req, res) => {
   const { id } = req.params;
+  const repoIdInt = parseInt(id, 10);
+  if (Number.isNaN(repoIdInt)) return res.status(400).json({ error: "Invalid repo id" });
 
   // Check if repo is public or owned by user
   const { data: repo, error: repoError } = await supabaseAdmin
     .from("repos")
     .select("is_public, user_id")
-    .eq("id", id)
+    .eq("id", repoIdInt)
     .single();
 
   if (repoError) return res.status(500).json({ error: repoError.message });
@@ -628,10 +691,34 @@ app.get("/repos/:id/files", checkAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from("files")
     .select("*")
-    .eq("repo_id", id);
+    .eq("repo_id", repoIdInt);
 
   if (error) return res.status(500).send(error.message);
   res.json(data);
+});
+
+// Public files listing for a public repo (no auth required)
+app.get("/public/repos/:id/files", async (req, res) => {
+  const repoIdInt = parseInt(req.params.id, 10);
+  if (Number.isNaN(repoIdInt)) return res.status(400).json({ error: "Invalid repo id" });
+  try {
+    const { data: repo, error: repoError } = await supabaseAdmin
+      .from('repos')
+      .select('is_public')
+      .eq('id', repoIdInt)
+      .single();
+    if (repoError) return res.status(500).json({ error: repoError.message });
+    if (!repo || !repo.is_public) return res.status(403).json({ error: 'Forbidden' });
+
+    const { data, error } = await supabaseAdmin
+      .from('files')
+      .select('*')
+      .eq('repo_id', repoIdInt);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Delete a repository

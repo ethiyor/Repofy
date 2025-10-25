@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 
 function Navbar({ onToggleDarkMode, userProfile, session, onShowProfile, onLogout, onShowMyRepositories, onShowUploadForm }) {
+  const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const [profileImageError, setProfileImageError] = useState(false);
 
@@ -113,10 +115,7 @@ function Navbar({ onToggleDarkMode, userProfile, session, onShowProfile, onLogou
           
           {/* Repofy Logo */}
           <button
-            onClick={() => {
-              // Navigate to dashboard/community - you'll need to implement this navigation
-              window.location.href = '/';
-            }}
+            onClick={() => navigate('/community')}
             style={{
               background: "transparent",
               border: "none",
@@ -229,7 +228,7 @@ function Navbar({ onToggleDarkMode, userProfile, session, onShowProfile, onLogou
                 </button>
                 
                 <button
-                  onClick={() => handleMenuClick(onShowUploadForm)}
+                  onClick={() => handleMenuClick(() => navigate('/create'))}
                   className="menu-item"
                   style={{
                     width: "100%",

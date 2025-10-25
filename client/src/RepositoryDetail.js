@@ -38,12 +38,15 @@ function RepositoryDetail({ session, repo, onBack, onStar, onDownload }) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/repos/${repo.id}/files`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      let res = await fetch(`${API_BASE_URL}/repos/${repo.id}/files`, {
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       });
-
+      if (!res.ok) {
+        // Fallback to public endpoint if unauthorized and repo is public
+        if (res.status === 401 || res.status === 403) {
+          res = await fetch(`${API_BASE_URL}/public/repos/${repo.id}/files`);
+        }
+      }
       if (res.ok) {
         const fileData = await res.json();
         setFiles(fileData);

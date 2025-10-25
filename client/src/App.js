@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import AuthForm from "./AuthForm";
 import RepoList from "./RepoList";
 import MyRepositories from "./MyRepositories";
 import RepositoryDetail from "./RepositoryDetail";
 import RepoEditor from "./RepoEditor";
+import CreateRepoPage from "./pages/CreateRepoPage";
+import CommunityPage from "./pages/CommunityPage";
 import UserProfile from "./UserProfile";
 import PublicProfile from "./PublicProfile";
 import ConfirmPage from "./ConfirmPage";
@@ -267,9 +269,10 @@ function App() {
           <p className="tagline">Your personal mini GitHub – simplified and fast.</p>
         </header>
 
-  <Routes>
+        <Routes>
+          <Route path="/" element={<Navigate to="/community" replace />} />
           <Route
-            path="/"
+            path="/community"
             element={
               session ? (
                 showProfile ? (
@@ -306,31 +309,13 @@ function App() {
                     onDownload={downloadFile}
                   />
                 ) : (
-                  <Dashboard
+                  <CommunityPage
                     session={session}
                     userProfile={userProfile}
-                    logout={handleLogout}
-                    uploadRepo={uploadRepo}
-                    handleCreateRepoOnly={handleCreateRepoOnly}
-                    title={title}
-                    description={description}
-                    tags={tags}
-                    code={code}
-                    setTitle={setTitle}
-                    setDescription={setDescription}
-                    setTags={setTags}
-                    message={message}
                     repos={repos}
                     setRepos={setRepos}
                     onStar={starRepo}
                     onDownload={downloadFile}
-                    isPublic={isPublic}
-                    setIsPublic={setIsPublic}
-                    showUploadForm={showUploadForm}
-                    setShowUploadForm={setShowUploadForm}
-                    createdRepo={createdRepo}
-                    setCreatedRepo={setCreatedRepo}
-                    uploadFile={uploadFile}
                     onShowProfile={() => setShowProfile(true)}
                     onShowUserProfile={showUserProfile}
                     onShowMyRepositories={handleShowMyRepositories}
@@ -348,6 +333,16 @@ function App() {
                     setIsSignUp={setIsSignUp}
                   />
                 </>
+              )
+            }
+          />
+          <Route
+            path="/create"
+            element={
+              session ? (
+                <CreateRepoPage session={session} createRepository={createRepository} />
+              ) : (
+                <Navigate to="/" replace />
               )
             }
           />

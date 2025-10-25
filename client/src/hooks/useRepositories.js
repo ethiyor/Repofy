@@ -11,18 +11,20 @@ export const useRepositories = (session) => {
   const [error, setError] = useState(null);
 
   const fetchRepos = async (token) => {
-    if (!token) return;
-    
     setLoading(true);
     setError(null);
     
     try {
-      const res = await fetch(`${API_BASE_URL}/repos`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      let url = `${API_BASE_URL}/repos`;
+      let opts = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+      let res = await fetch(url, opts);
+      if (!res.ok) {
+        // Fallback to public-only list if unauthorized or no token
+        if (res.status === 401 || res.status === 403 || !token) {
+          res = await fetch(`${API_BASE_URL}/public/repos`);
+        }
+      }
       if (!res.ok) throw new Error("Failed to fetch repositories.");
-
       const data = await res.json();
       const seen = new Set();
       const enrichedRepos = data

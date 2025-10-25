@@ -152,7 +152,7 @@ function MyRepositories({ session, repos, setRepos, onStar, onDownload, onBack, 
     // Ensure parent switches back to Community/Dashboard view first
     onBack?.();
     // Then trigger the dashboard's create form via query param (next tick)
-    setTimeout(() => navigate('/?createRepo=1'), 0);
+    setTimeout(() => navigate('/create'), 0);
   };
 
   const toggleAnalytics = () => {
