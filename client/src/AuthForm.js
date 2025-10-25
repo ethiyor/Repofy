@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import supabase from "./supabase";
+import supabase, { SUPABASE_URL_EFFECTIVE } from "./supabase";
 import { checkUsernameAvailability } from "./api";
 import "./App.css";
 
@@ -204,7 +204,12 @@ function AuthForm({ onAuthSuccess, isSignUp, setIsSignUp }) {
 
       onAuthSuccess(session);
     } catch (err) {
-      setError(err.message);
+      const msg = err?.message || 'Authentication failed';
+      if (/Failed to fetch/i.test(msg)) {
+        setError(`Network error reaching Supabase at ${SUPABASE_URL_EFFECTIVE}. Check REACT_APP_SUPABASE_URL and your internet connection.`);
+      } else {
+        setError(msg);
+      }
     }
   };
 
